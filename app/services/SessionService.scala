@@ -43,13 +43,12 @@ class SessionService @Inject()(
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY)
 
-  def cacheRegistrationList(value: RegistrationList)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
-    cache(CacheKeys.RegistrationList, Some(value))
+  def cacheRegistrationList(value: RegistrationList)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] = cache(CacheKeys.RegistrationList, Some(value))
 
-  private def cache[T](key: CacheKeys.Value, value: Option[T] = None)(
-    implicit hc: HeaderCarrier): Future[Option[PbikSession]] = {
-    Logger.warn("[SessionService] We called the cache method")
 
+  def resetRegistrationList()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] = cache(CacheKeys.RegistrationList)
+
+  private def cache[T](key: CacheKeys.Value, value: Option[T] = None)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] = {
     def selectKeysToCache(session: PbikSession): PbikSession =
       key match {
         case CacheKeys.RegistrationList => session.copy(registrations = value.get.asInstanceOf[RegistrationList])
