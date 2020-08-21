@@ -171,29 +171,30 @@ class ManageRegistrationController @Inject()(
   }
 
   def confirmAddNextTaxYear: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
-    val result = bikListService
-      .registeredBenefitsList(controllersReferenceData.YEAR_RANGE.cy, EmpRef.empty)(uriInformation.getBenefitTypesPath)
-      .flatMap { biksListOption =>
-        Logger.warn(s"[BikList length] ${biksListOption.length.toString}")
-        formMappings.objSelectedForm.bindFromRequest.fold(
-          formWithErrors =>
-            Future.successful(Ok(nextTaxYearView(
-              bikForm = formWithErrors,
-              additive = true,
-              taxYearRange = controllersReferenceData.YEAR_RANGE,
-              nonLegislationBiks = pbikAppConfig.biksNotSupported,
-              decommissionedBiks = pbikAppConfig.biksDecommissioned,
-              biksAvailableCount = Some(biksListOption.size),
-              empRef = request.empRef
-            ))),
-          values => {
-            cachingService.cacheRegistrationList(values).flatMap { _ =>
-              Future.successful(Redirect(routes.ManageRegistrationController.showconfirmAddCurrentTaxYear()))
-            }
-          }
-        )
-      }
-    controllersReferenceData.responseErrorHandler(result)
+    val resultFuture = for {
+      biksListOption: List[Bik] <- bikListService.registeredBenefitsList(
+                                    controllersReferenceData.YEAR_RANGE.cy,
+                                    EmpRef.empty)(uriInformation.getBenefitTypesPath)
+      result <- formMappings.objSelectedForm.bindFromRequest.fold(
+                 formWithErrors =>
+                   Future.successful(
+                     Ok(nextTaxYearView(
+                       bikForm = formWithErrors,
+                       additive = true,
+                       taxYearRange = controllersReferenceData.YEAR_RANGE,
+                       nonLegislationBiks = pbikAppConfig.biksNotSupported,
+                       decommissionedBiks = pbikAppConfig.biksDecommissioned,
+                       biksAvailableCount = Some(biksListOption.size),
+                       empRef = request.empRef
+                     ))),
+                 values => {
+                   cachingService.cacheRegistrationList(values).flatMap { _ =>
+                     Future.successful(Redirect(routes.ManageRegistrationController.showconfirmAddCurrentTaxYear()))
+                   }
+                 }
+               )
+    } yield result
+    controllersReferenceData.responseErrorHandler(resultFuture)
   }
 
   def confirmRemoveNextTaxYear: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>

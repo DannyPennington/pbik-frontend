@@ -67,7 +67,13 @@ class HomePageController @Inject()(
     val lang = request.getQueryString("lang").getOrElse("en")
     Logger.info(s"[HomePageController][setLanguage] Request received: set language to $lang")
     val newLang = Lang(lang)
-    Redirect(routes.HomePageController.onPageLoad()).withLang(newLang)(messagesApi)
+    Logger.warn(
+      s"[Changing language] ${request.headers.toMap.getOrElse("Referer", "None found").asInstanceOf[List[String]].head}")
+    Redirect(
+      request.headers.toMap
+        .getOrElse("Referer", List("https://www.tax.service.gov.uk/payrollbik/payrolled-benefits-expenses")) // IMPROVE confirm this is the right url and ok to do
+        .asInstanceOf[List[String]].head)
+        .withLang(newLang)(messagesApi)
   }
 
   def loadCautionPageForCY: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
