@@ -22,16 +22,16 @@ GET         /payrolled-benefits-expenses                          controllers.Ho
 ## Add remove Registrations
 GET         /cy1/choose-benefit-expense                           controllers.registration.ManageRegistrationController.nextTaxYearAddOnPageLoad
 GET         /cy1/add-benefit-expense                              controllers.registration.ManageRegistrationController.showconfirmAddCurrentTaxYear
-POST        /cy1/add-benefit-expense                              controllers.registration.ManageRegistrationController.confirmAddNextTaxYear
+POST        /cy1/choose-benefit-expense                           controllers.registration.ManageRegistrationController.confirmAddNextTaxYear
 GET         /cy/choose-benefit-expense                            controllers.registration.ManageRegistrationController.currentTaxYearOnPageLoad
 ##GET         /cy/add-benefit-expense
 POST        /cy/add-benefit-expense                               controllers.registration.ManageRegistrationController.confirmAddCurrentTaxYear
 
 ##GET         /update-registrations
-POST        /update-registrations                                controllers.registration.ManageRegistrationController.updateRegisteredBenefitTypes
+POST        /update-registrations                                 controllers.registration.ManageRegistrationController.updateRegisteredBenefitTypes
 
-##GET         /cy1/add-benefit-expense-confirmed
-POST        /cy1/add-benefit-expense-confirmed                     controllers.registration.ManageRegistrationController.addNextYearRegisteredBenefitTypes
+GET         /cy1/add-benefit-expense-confirmed                    controllers.WhatNextPageController.showWhatNextRegisteredBik
+POST        /cy1/add-benefit-expense-confirmed                    controllers.registration.ManageRegistrationController.addNextYearRegisteredBenefitTypes
 
 GET         /:iabdType/remove-benefit-expense                     controllers.registration.ManageRegistrationController.confirmRemoveNextTaxYearNoForm(iabdType: String)
 ##GET         /cy1/remove-benefit-expense

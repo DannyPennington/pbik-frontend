@@ -23,16 +23,22 @@ import javax.inject.Inject
 import models._
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{MessagesControllerComponents, Result}
-import services.BikListService
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
+import services.{BikListService, SessionService}
 import uk.gov.hmrc.http.SessionKeys
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import utils.{ControllersReferenceData, _}
 import views.html.registration.WhatNextAddRemove
+import controllers.actions.{AuthAction, NoSessionCheckAction}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class WhatNextPageController @Inject()(
   override val messagesApi: MessagesApi,
+  val cachingService: SessionService,
   bikListService: BikListService,
+  formMappings: FormMappings,
+  authenticate: AuthAction,
+  noSessionCheck: NoSessionCheckAction,
   val tierConnector: HmrcTierConnector,
   taxDateUtils: TaxDateUtils,
   controllersReferenceData: ControllersReferenceData,
@@ -53,7 +59,7 @@ class WhatNextPageController @Inject()(
   def loadWhatNextRegisteredBIK(formRegisteredList: Form[RegistrationList], year: Int)(
     implicit request: AuthenticatedRequest[_]): Result = {
     val yearCalculated = calculateTaxYear(taxDateUtils.isCurrentTaxYear(year))
-
+    cachingService.cacheRegistrationList(formRegisteredList.value.get)
     Ok(
       whatNextAddRemoveView(
         taxDateUtils.isCurrentTaxYear(year),
@@ -63,6 +69,21 @@ class WhatNextPageController @Inject()(
         empRef = request.empRef))
       .withSession(request.session + (SessionKeys.sessionId -> s"session-${UUID.randomUUID}"))
   }
+
+  def showWhatNextRegisteredBik: Action[AnyContent] =
+    (authenticate).async { implicit request =>
+      cachingService.fetchPbikSession().map { biks =>
+        Ok(
+          whatNextAddRemoveView(
+            taxDateUtils.isCurrentTaxYear(controllersReferenceData.YEAR_RANGE.cy),
+            controllersReferenceData.YEAR_RANGE,
+            additive = true,
+            formMappings.objSelectedForm.fill(biks.get.registrations),
+            empRef = request.empRef
+          ))
+      }
+
+    }
 
   def loadWhatNextRemovedBIK(formRegisteredList: Form[RegistrationList], year: Int)(
     implicit request: AuthenticatedRequest[_]): Result = {

@@ -72,8 +72,9 @@ class HomePageController @Inject()(
     Redirect(
       request.headers.toMap
         .getOrElse("Referer", List("https://www.tax.service.gov.uk/payrollbik/payrolled-benefits-expenses")) // IMPROVE confirm this is the right url and ok to do
-        .asInstanceOf[List[String]].head)
-        .withLang(newLang)(messagesApi)
+        .asInstanceOf[List[String]]
+        .head)
+      .withLang(newLang)(messagesApi)
   }
 
   def loadCautionPageForCY: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
