@@ -24,10 +24,8 @@ GET         /cy1/choose-benefit-expense                           controllers.re
 GET         /cy1/add-benefit-expense                              controllers.registration.ManageRegistrationController.showconfirmAddCurrentTaxYear
 POST        /cy1/choose-benefit-expense                           controllers.registration.ManageRegistrationController.confirmAddNextTaxYear
 GET         /cy/choose-benefit-expense                            controllers.registration.ManageRegistrationController.currentTaxYearOnPageLoad
-##GET         /cy/add-benefit-expense
 POST        /cy/add-benefit-expense                               controllers.registration.ManageRegistrationController.confirmAddCurrentTaxYear
 
-##GET         /update-registrations
 POST        /update-registrations                                 controllers.registration.ManageRegistrationController.updateRegisteredBenefitTypes
 
 GET         /cy1/add-benefit-expense-confirmed                    controllers.WhatNextPageController.showWhatNextRegisteredBik

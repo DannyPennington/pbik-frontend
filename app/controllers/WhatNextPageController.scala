@@ -30,7 +30,9 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import utils.{ControllersReferenceData, _}
 import views.html.registration.WhatNextAddRemove
 import controllers.actions.{AuthAction, NoSessionCheckAction}
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class WhatNextPageController @Inject()(
   override val messagesApi: MessagesApi,
@@ -67,7 +69,7 @@ class WhatNextPageController @Inject()(
         additive = true,
         formRegisteredList,
         empRef = request.empRef))
-      .withSession(request.session + (SessionKeys.sessionId -> s"session-${UUID.randomUUID}"))
+
   }
 
   def showWhatNextRegisteredBik: Action[AnyContent] =
@@ -98,4 +100,17 @@ class WhatNextPageController @Inject()(
         empRef = request.empRef))
       .withSession(request.session + (SessionKeys.sessionId -> s"session-${UUID.randomUUID}"))
   }
+
+  def showWhatNextRemovedBik: Action[AnyContent] =
+    (authenticate).async { implicit request =>
+      val resultFuture = Future.successful(
+        Ok(
+          whatNextAddRemoveView(
+            false,
+            controllersReferenceData.YEAR_RANGE,
+            additive = false,
+            formRegisteredList,
+            empRef = request.empRef))
+      controllersReferenceData.responseErrorHandler(resultFuture)
+    }
 }
