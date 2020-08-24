@@ -38,16 +38,20 @@ class SessionService @Inject()(
 
   val PBIK_SESSION_KEY: String = "pbik_session"
   val cleanRegistrationList: RegistrationList = RegistrationList(None, List.empty[RegistrationItem], None)
-  val cleanBikRemoved: String = ""
+  val cleanBikRemoved: RegistrationItem = RegistrationItem("", false, false)
   val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved)
 
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
-    sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY)
+    sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY).recover {
+      case ex: Exception =>
+        Logger.error(s"[SessionService][fetchPbikSession] Fetch failed due to: $ex")
+        None
+    }
 
   def cacheRegistrationList(value: RegistrationList)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.RegistrationList, Some(value))
 
-  def cacheBikRemoved(value: String)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
+  def cacheBikRemoved(value: RegistrationItem)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.BikRemoved, Some(value))
 
   def resetRegistrationList()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
@@ -61,7 +65,7 @@ class SessionService @Inject()(
     def selectKeysToCache(session: PbikSession): PbikSession =
       key match {
         case CacheKeys.RegistrationList => session.copy(registrations = value.get.asInstanceOf[RegistrationList])
-        case CacheKeys.BikRemoved => session.copy(bikRemoved = value.get.asInstanceOf[String])
+        case CacheKeys.BikRemoved       => session.copy(bikRemoved = value.get.asInstanceOf[RegistrationItem])
         case _ =>
           Logger.warn(s"No matching keys")
           cleanSession

@@ -230,7 +230,7 @@ class ManageRegistrationController @Inject()(
       val registrationList =
         RegistrationList(None, List(RegistrationItem(iabdType, active = true, enabled = false)), reason = None)
       val form: Form[RegistrationList] = formMappings.objSelectedForm.fill(registrationList)
-      cachingService.cacheBikRemoved(iabdType)
+      cachingService.cacheBikRemoved(RegistrationItem(translator.reverseTranslate(iabdType), false, false))
       val resultFuture = Future.successful(
         Ok(
           confirmUpdateNextTaxYearView(

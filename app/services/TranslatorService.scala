@@ -19,55 +19,55 @@ package services
 class TranslatorService {
 
   val urlMappedIABDValues = Map(
-    "40" -> "assets_transferred",
-    "48" -> "employee_payments",
-    "54" -> "vouchers",
+    "40" -> "assets-transferred",
+    "48" -> "payments-employee",
+    "54" -> "vouchers-credit-cards",
     "38" -> "living-accommodation",
-    "44" -> "mileage_allowance",
-    "31" -> "car_and_fuel",
+    "44" -> "mileage",
+    "31" -> "car",
     "35" -> "vans",
-    "36" -> "van_fuel",
+    "36" -> "van-fuel",
     "37" -> "interest-free-loans",
-    "30" -> "private_insurance",
-    "50" -> "qualifying_relocation_expenses",
-    "8"  -> "services_supplied",
-    "39" -> "employee_assets",
-    "47" -> "other_items",
-    "52" -> "income_tax",
-    "53" -> "travelling-payments",
+    "30" -> "medical",
+    "50" -> "qualifying-relocation",
+    "8"  -> "services",
+    "39" -> "assets-disposal",
+    "47" -> "other",
+    "52" -> "income-tax",
+    "53" -> "travelling-subsistence",
     "42" -> "entertainment",
     "43" -> "business-travel",
-    "32" -> "home_telephone",
-    "45" -> "non_qualifying_relocation_expenses"
+    "32" -> "telephone",
+    "45" -> "non-qualifying-relocation"
   )
 
   val urlMappedIABDValues2 = Map(
-    "assets_transferred"                 -> "40",
-    "employee_payments"                  -> "48",
-    "vouchers"                           -> "54",
-    "living-accommodation"               -> "38",
-    "mileage_allowance"                  -> "44",
-    "car_and_fuel"                       -> "31",
-    "vans"                               -> "35",
-    "van_fuel"                           -> "36",
-    "interest-free-loans"                -> "37",
-    "private_insurance"                  -> "30",
-    "qualifying_relocation_expenses"     -> "50",
-    "services_supplied"                  -> "8",
-    "employee_assets"                    -> "39",
-    "other_items"                        -> "47",
-    "income_tax"                         -> "52",
-    "travelling-payments"                -> "53",
-    "entertainment"                      -> "42",
-    "business-travel"                    -> "43",
-    "home_telephone"                     -> "32",
-    "non_qualifying_relocation_expenses" -> "45"
+    "assets-transferred"        -> "40",
+    "payments-employee"         -> "48",
+    "vouchers-credit-cards"     -> "54",
+    "living-accommodation"      -> "38",
+    "mileage"                   -> "44",
+    "car"                       -> "31",
+    "vans"                      -> "35",
+    "van-fuel"                  -> "36",
+    "interest-free-loans"       -> "37",
+    "medical"                   -> "30",
+    "qualifying-relocation"     -> "50",
+    "services"                  -> "8",
+    "assets-disposal"           -> "39",
+    "other"                     -> "47",
+    "income-tax"                -> "52",
+    "travelling-subsistence"    -> "53",
+    "entertainment"             -> "42",
+    "business-travel"           -> "43",
+    "telephone"                 -> "32",
+    "non-qualifying-relocation" -> "45"
   )
 
   def translate(number: String): String =
-    urlMappedIABDValues.get(number).getOrElse("No translation")
+    urlMappedIABDValues.get(number).getOrElse(s"No translation for: $number ")
 
   def reverseTranslate(text: String): String =
-    urlMappedIABDValues2.get(text).getOrElse("No translation")
+    urlMappedIABDValues2.get(text).getOrElse(s"No translation for: $text")
 
 }

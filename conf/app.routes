@@ -34,7 +34,7 @@ POST        /cy1/add-benefit-expense-confirmed                    controllers.re
 GET         /:iabdType/remove-benefit-expense                     controllers.registration.ManageRegistrationController.confirmRemoveNextTaxYearNoForm(iabdType: String)
 ##GET         /cy1/remove-benefit-expense
 POST        /cy1/remove-benefit-expense                           controllers.registration.ManageRegistrationController.confirmRemoveNextTaxYear
-##GET         /cy1/remove-benefit-expense-next
+GET         /cy1/remove-benefit-expense-next                      controllers.WhatNextPageController.showWhatNextRemovedBik
 POST        /cy1/remove-benefit-expense-next                      controllers.registration.ManageRegistrationController.removeNextYearRegisteredBenefitTypes
 
 ## manage exclusion list
