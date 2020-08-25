@@ -74,16 +74,6 @@ class ExclusionListController @Inject()(
       case _                                => Future.failed(throw new InvalidYearURIException())
     }
 
-  def mapYearIntToString(URIYearInt: Int): Future[String] = {
-    val cyminus1 = controllersReferenceData.YEAR_RANGE.cyminus1
-    val cy = controllersReferenceData.YEAR_RANGE.cy
-    URIYearInt match {
-      case cyminus1 => Future.successful(utils.FormMappingsConstants.CY)
-      case cy       => Future.successful(utils.FormMappingsConstants.CYP1)
-      case _        => Future.failed(throw new InvalidYearURIException())
-    }
-  }
-
   def validateRequest(isCurrentYear: String, iabdType: String)(implicit request: AuthenticatedRequest[_]): Future[Int] =
     for {
       year <- mapYearStringToInt(isCurrentYear)
@@ -258,14 +248,12 @@ class ExclusionListController @Inject()(
                            year,
                            validModel)
                 resultAlreadyExcluded: List[EiLPerson] <- eiLListService.currentYearEiL(iabdTypeValue, year)
-                yearString                             <- mapYearIntToString(year)
-
               } yield {
                 val listOfMatches: List[EiLPerson] = eiLListService.searchResultsRemoveAlreadyExcluded(
                   resultAlreadyExcluded,
                   result.json.validate[List[EiLPerson]].asOpt.get)
                 cachingService.cacheListOfMatches(listOfMatches)
-                Redirect(routes.ExclusionListController.showResults(yearString, iabdType, formType))
+                Redirect(routes.ExclusionListController.showResults(isCurrentTaxYear, iabdType, formType))
               }
             }
           )
@@ -294,14 +282,7 @@ class ExclusionListController @Inject()(
 
       } yield {
         val listOfMatches = session.get.listOfMatches
-        searchResultsHandleValidResult(
-          listOfMatches,
-          resultAlreadyExcluded,
-          yearAsInt.toString,
-          formType,
-          iabdTypeValue,
-          form,
-          None)
+        searchResultsHandleValidResult(listOfMatches, resultAlreadyExcluded, year, formType, iabdTypeValue, form, None)
       }
     }
 
@@ -459,7 +440,6 @@ class ExclusionListController @Inject()(
               empRef = request.empRef))
       },
       values => {
-
         validateRequest(isCurrentTaxYear, iabdTypeValue)
         val excludedIndividual = extractExcludedIndividual(values._1, values._2)
         commitExclusion(isCurrentTaxYear, iabdType, taxYearRange, excludedIndividual)
