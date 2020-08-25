@@ -27,7 +27,7 @@ import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc._
 import play.api.{Configuration, Logger}
-import services.{BikListService, EiLListService, SessionService, TranslatorService}
+import services.{BikListService, EiLListService, SessionService}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionKeys}
 import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -48,7 +48,6 @@ class ExclusionListController @Inject()(
   val eiLListService: EiLListService,
   val bikListService: BikListService,
   val cachingService: SessionService,
-  val translatorService: TranslatorService,
   val tierConnector: HmrcTierConnector, //TODO: Why do we need this?,
   taxDateUtils: TaxDateUtils,
   splunkLogger: SplunkLogger,

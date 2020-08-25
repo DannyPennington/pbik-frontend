@@ -22,7 +22,7 @@ import config.PbikAppConfig
 import connectors.HmrcTierConnector
 import controllers.WhatNextPageController
 import controllers.actions.{AuthAction, NoSessionCheckAction}
-import services.{BikListService, RegistrationService, SessionService, TranslatorService}
+import services.{BikListService, RegistrationService, SessionService}
 import javax.inject.Inject
 import models._
 import play.api.data.Form
@@ -48,7 +48,6 @@ class ManageRegistrationController @Inject()(
   tierConnector: HmrcTierConnector,
   val authenticate: AuthAction,
   val noSessionCheck: NoSessionCheckAction,
-  val translator: TranslatorService,
   val cachingService: SessionService,
   taxDateUtils: TaxDateUtils,
   whatNextPageController: WhatNextPageController,
@@ -230,7 +229,7 @@ class ManageRegistrationController @Inject()(
       val registrationList =
         RegistrationList(None, List(RegistrationItem(iabdType, active = true, enabled = false)), reason = None)
       val form: Form[RegistrationList] = formMappings.objSelectedForm.fill(registrationList)
-      cachingService.cacheBikRemoved(RegistrationItem(translator.reverseTranslate(iabdType), false, false))
+      cachingService.cacheBikRemoved(RegistrationItem(uriInformation.iabdValueURLDeMapper(iabdType), false, false))
       val resultFuture = Future.successful(
         Ok(
           confirmUpdateNextTaxYearView(
