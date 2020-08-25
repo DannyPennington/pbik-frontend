@@ -266,9 +266,7 @@ class ExclusionListController @Inject()(
                   resultAlreadyExcluded,
                   result.json.validate[List[EiLPerson]].asOpt.get)
                 cachingService.cacheListOfMatches(listOfMatches)
-                Redirect(
-                  routes.ExclusionListController.showResults(yearString, iabdType, formType, isCurrentTaxYear)
-                )
+                Redirect(routes.ExclusionListController.showResults(yearString, iabdType, formType))
               }
             }
           )
@@ -282,7 +280,7 @@ class ExclusionListController @Inject()(
               empRef = Some(request.empRef))))
       }
     }
-  def showResults(year: String, iabdType: String, formType: String, isCurrentTaxYear: String): Action[AnyContent] =
+  def showResults(year: String, iabdType: String, formType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       Logger.warn(s"iabd value is: $iabdType")
       val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
@@ -291,8 +289,8 @@ class ExclusionListController @Inject()(
         case ControllersReferenceDataCodes.FORM_TYPE_NONINO => formMappings.exclusionSearchFormWithoutNino
       }
       for {
-        year2                 <- mapYearStringToInt(year)
-        resultAlreadyExcluded <- eiLListService.currentYearEiL(iabdTypeValue, year2)
+        yearAsInt             <- mapYearStringToInt(year)
+        resultAlreadyExcluded <- eiLListService.currentYearEiL(iabdTypeValue, yearAsInt)
         session               <- cachingService.fetchPbikSession
 
       } yield {
@@ -300,7 +298,7 @@ class ExclusionListController @Inject()(
         searchResultsHandleValidResult(
           listOfMatches,
           resultAlreadyExcluded,
-          isCurrentTaxYear,
+          yearAsInt.toString,
           formType,
           iabdTypeValue,
           form,

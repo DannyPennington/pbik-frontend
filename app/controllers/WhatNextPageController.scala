@@ -58,20 +58,6 @@ class WhatNextPageController @Inject()(
     }
   }
 
-  def loadWhatNextRegisteredBIK(formRegisteredList: Form[RegistrationList], year: Int)(
-    implicit request: AuthenticatedRequest[_]): Result = {
-    val yearCalculated = calculateTaxYear(taxDateUtils.isCurrentTaxYear(year))
-    cachingService.cacheRegistrationList(formRegisteredList.value.get)
-    Ok(
-      whatNextAddRemoveView(
-        taxDateUtils.isCurrentTaxYear(year),
-        controllersReferenceData.YEAR_RANGE,
-        additive = true,
-        formRegisteredList,
-        empRef = request.empRef))
-
-  }
-
   def showWhatNextRegisteredBik: Action[AnyContent] =
     (authenticate).async { implicit request =>
       cachingService.fetchPbikSession().map { biks =>

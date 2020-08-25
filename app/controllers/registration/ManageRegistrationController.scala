@@ -313,9 +313,10 @@ class ManageRegistrationController @Inject()(
                 request.empRef,
                 year,
                 changes)
+              cachingService.cacheRegistrationList(values)
               saveFuture.map { saveResponse: HttpResponse =>
                 auditBikUpdate(additive = true, year, persistentBiks)
-                whatNextPageController.loadWhatNextRegisteredBIK(form, year)
+                Redirect(controllers.routes.WhatNextPageController.showWhatNextRegisteredBik())
               }
             } else {
               // Remove benefit - if there are no errors proceed
