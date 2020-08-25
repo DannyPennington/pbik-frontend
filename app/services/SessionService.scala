@@ -33,13 +33,14 @@ class SessionService @Inject()(
   appConfig: PbikAppConfig) {
 
   private object CacheKeys extends Enumeration {
-    val RegistrationList, BikRemoved = Value
+    val RegistrationList, BikRemoved, ListOfMatches = Value
   }
 
   val PBIK_SESSION_KEY: String = "pbik_session"
   val cleanRegistrationList: RegistrationList = RegistrationList(None, List.empty[RegistrationItem], None)
   val cleanBikRemoved: RegistrationItem = RegistrationItem("", false, false)
-  val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved)
+  val cleanListOfMatches: List[EiLPerson] = List.empty[EiLPerson]
+  val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches)
 
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY).recover {
@@ -54,11 +55,17 @@ class SessionService @Inject()(
   def cacheBikRemoved(value: RegistrationItem)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.BikRemoved, Some(value))
 
+  def cacheListOfMatches(value: List[EiLPerson])(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
+    cache(CacheKeys.ListOfMatches, Some(value))
+
   def resetRegistrationList()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.RegistrationList)
 
   def resetBikRemoved()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.BikRemoved)
+
+  def resetListOfMatches(value: List[EiLPerson])(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
+    cache(CacheKeys.ListOfMatches)
 
   private def cache[T](key: CacheKeys.Value, value: Option[T] = None)(
     implicit hc: HeaderCarrier): Future[Option[PbikSession]] = {
@@ -66,6 +73,7 @@ class SessionService @Inject()(
       key match {
         case CacheKeys.RegistrationList => session.copy(registrations = value.get.asInstanceOf[RegistrationList])
         case CacheKeys.BikRemoved       => session.copy(bikRemoved = value.get.asInstanceOf[RegistrationItem])
+        case CacheKeys.ListOfMatches    => session.copy(listOfMatches = value.get.asInstanceOf[List[EiLPerson]])
         case _ =>
           Logger.warn(s"No matching keys")
           cleanSession

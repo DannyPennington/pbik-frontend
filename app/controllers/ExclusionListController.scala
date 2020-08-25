@@ -27,7 +27,7 @@ import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc._
 import play.api.{Configuration, Logger}
-import services.{BikListService, EiLListService}
+import services.{BikListService, EiLListService, SessionService, TranslatorService}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionKeys}
 import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -47,6 +47,8 @@ class ExclusionListController @Inject()(
   val noSessionCheck: NoSessionCheckAction,
   val eiLListService: EiLListService,
   val bikListService: BikListService,
+  val cachingService: SessionService,
+  val translatorService: TranslatorService,
   val tierConnector: HmrcTierConnector, //TODO: Why do we need this?,
   taxDateUtils: TaxDateUtils,
   splunkLogger: SplunkLogger,
@@ -72,6 +74,16 @@ class ExclusionListController @Inject()(
       case utils.FormMappingsConstants.CYP1 => Future.successful(controllersReferenceData.YEAR_RANGE.cy)
       case _                                => Future.failed(throw new InvalidYearURIException())
     }
+
+  def mapYearIntToString(URIYearInt: Int): Future[String] = {
+    val cyminus1 = controllersReferenceData.YEAR_RANGE.cyminus1
+    val cy = controllersReferenceData.YEAR_RANGE.cy
+    URIYearInt match {
+      case cyminus1 => Future.successful(utils.FormMappingsConstants.CY)
+      case cy       => Future.successful(utils.FormMappingsConstants.CYP1)
+      case _        => Future.failed(throw new InvalidYearURIException())
+    }
+  }
 
   def validateRequest(isCurrentYear: String, iabdType: String)(implicit request: AuthenticatedRequest[_]): Future[Int] =
     for {
@@ -164,21 +176,12 @@ class ExclusionListController @Inject()(
               } yield {
                 selectedValue match {
                   case ControllersReferenceDataCodes.FORM_TYPE_NINO =>
-                    Ok(
-                      ninoExclusionSearchFormView(
-                        taxYearRange,
-                        isCurrentTaxYear,
-                        iabdTypeValue,
-                        formMappings.exclusionSearchFormWithNino,
-                        empRef = request.empRef))
+                    Redirect(
+                      routes.ExclusionListController.showExclusionSearchForm(isCurrentTaxYear, iabdType, "nino")
+                    )
                   case ControllersReferenceDataCodes.FORM_TYPE_NONINO =>
-                    Ok(
-                      noNinoExclusionSearchFormView(
-                        taxYearRange,
-                        isCurrentTaxYear,
-                        iabdTypeValue,
-                        formMappings.exclusionSearchFormWithoutNino,
-                        empRef = request.empRef))
+                    Redirect(
+                      routes.ExclusionListController.showExclusionSearchForm(isCurrentTaxYear, iabdType, "no-nino"))
                   case "" =>
                     Redirect(
                       routes.ExclusionListController.withOrWithoutNinoOnPageLoad(isCurrentTaxYear, iabdTypeValue))
@@ -190,11 +193,45 @@ class ExclusionListController @Inject()(
         controllersReferenceData.responseErrorHandler(resultFuture)
       } else {
         Future.successful(
-          Ok(
+          InternalServerError(
             errorPageView(
               ControllersReferenceDataCodes.FEATURE_RESTRICTED,
               taxDateUtils.getTaxYearRange(),
               empRef = Some(request.empRef))))
+      }
+    }
+
+  def showExclusionSearchForm(isCurrentTaxYear: String, iabdType: String, formType: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      val taxYearRange = controllersReferenceData.YEAR_RANGE
+      val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
+      formType match {
+        case "nino" =>
+          Future.successful(
+            Ok(
+              ninoExclusionSearchFormView(
+                taxYearRange,
+                isCurrentTaxYear,
+                iabdTypeValue,
+                formMappings.exclusionSearchFormWithNino,
+                empRef = request.empRef)))
+        case "no-nino" =>
+          Future.successful(
+            Ok(
+              noNinoExclusionSearchFormView(
+                taxYearRange,
+                isCurrentTaxYear,
+                iabdTypeValue,
+                formMappings.exclusionSearchFormWithoutNino,
+                empRef = request.empRef)))
+        case _ =>
+          Future.successful(
+            InternalServerError(
+              errorPageView(
+                ControllersReferenceDataCodes.INVALID_FORM_ERROR,
+                taxDateUtils.getTaxYearRange(),
+                empRef = Some(request.empRef))))
+
       }
     }
 
@@ -222,19 +259,16 @@ class ExclusionListController @Inject()(
                            year,
                            validModel)
                 resultAlreadyExcluded: List[EiLPerson] <- eiLListService.currentYearEiL(iabdTypeValue, year)
+                yearString                             <- mapYearIntToString(year)
 
               } yield {
                 val listOfMatches: List[EiLPerson] = eiLListService.searchResultsRemoveAlreadyExcluded(
                   resultAlreadyExcluded,
                   result.json.validate[List[EiLPerson]].asOpt.get)
-                searchResultsHandleValidResult(
-                  listOfMatches,
-                  resultAlreadyExcluded,
-                  isCurrentTaxYear,
-                  formType,
-                  iabdTypeValue,
-                  form,
-                  None)
+                cachingService.cacheListOfMatches(listOfMatches)
+                Redirect(
+                  routes.ExclusionListController.showResults(yearString, iabdType, formType, isCurrentTaxYear)
+                )
               }
             }
           )
@@ -246,6 +280,31 @@ class ExclusionListController @Inject()(
               ControllersReferenceDataCodes.FEATURE_RESTRICTED,
               taxDateUtils.getTaxYearRange(),
               empRef = Some(request.empRef))))
+      }
+    }
+  def showResults(year: String, iabdType: String, formType: String, isCurrentTaxYear: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      Logger.warn(s"iabd value is: $iabdType")
+      val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
+      val form = formType match {
+        case ControllersReferenceDataCodes.FORM_TYPE_NINO   => formMappings.exclusionSearchFormWithNino
+        case ControllersReferenceDataCodes.FORM_TYPE_NONINO => formMappings.exclusionSearchFormWithoutNino
+      }
+      for {
+        year2                 <- mapYearStringToInt(year)
+        resultAlreadyExcluded <- eiLListService.currentYearEiL(iabdTypeValue, year2)
+        session               <- cachingService.fetchPbikSession
+
+      } yield {
+        val listOfMatches = session.get.listOfMatches
+        searchResultsHandleValidResult(
+          listOfMatches,
+          resultAlreadyExcluded,
+          isCurrentTaxYear,
+          formType,
+          iabdTypeValue,
+          form,
+          None)
       }
     }
 
