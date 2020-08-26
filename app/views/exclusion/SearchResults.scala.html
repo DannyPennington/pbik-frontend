@@ -30,9 +30,11 @@ uriInformation: URIInformation,
 repeatWithIndex: RepeatWithIndex)
 
 @(taxYearRange: TaxYearRange,
-  year: String, iabdType: String,
+  year: String,
+  iabdType: String,
   listOfMatchesForm: Form[(String,EiLPersonList)],
-  formType: String, empRef: EmpRef)(implicit request: Request[_], messages: Messages)
+  formType: String,
+  empRef: EmpRef)(implicit request: Request[_], messages: Messages)
 
 @parentTemplate( pageTitle=messages("ExclusionSearch.title") + " - " + messages("Service.title"), Some(taxYearRange), Some(empRef.toString)) {
 
@@ -161,7 +163,7 @@ repeatWithIndex: RepeatWithIndex)
                   }
                  </p>
 
-                    @helpers.form(action = routes.ExclusionListController.updateExclusions(year, uriInformation.iabdValueURLMapper(iabdType)),
+                    @helpers.form(action = routes.ExclusionListController.updateExclusions(year, uriInformation.iabdValueURLMapper(iabdType), formType),
                     'onsubmit -> "gaEventConfirmExclude()") {
                      @repeatWithIndex(listOfMatchesForm("individuals"), min=1) { (listItem,index) =>
                          <fieldset class="form-group">

@@ -37,9 +37,9 @@ class SessionService @Inject()(
   }
 
   val PBIK_SESSION_KEY: String = "pbik_session"
-  val cleanRegistrationList: RegistrationList = RegistrationList(None, List.empty[RegistrationItem], None)
-  val cleanBikRemoved: RegistrationItem = RegistrationItem("", false, false)
-  val cleanListOfMatches: List[EiLPerson] = List.empty[EiLPerson]
+  val cleanRegistrationList: Option[RegistrationList] = Some(RegistrationList(None, List.empty[RegistrationItem], None))
+  val cleanBikRemoved: Option[RegistrationItem] = Some(RegistrationItem("", false, false))
+  val cleanListOfMatches: Option[List[EiLPerson]] = Some(List.empty[EiLPerson])
   val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches)
 
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
@@ -71,9 +71,9 @@ class SessionService @Inject()(
     implicit hc: HeaderCarrier): Future[Option[PbikSession]] = {
     def selectKeysToCache(session: PbikSession): PbikSession =
       key match {
-        case CacheKeys.RegistrationList => session.copy(registrations = value.get.asInstanceOf[RegistrationList])
-        case CacheKeys.BikRemoved       => session.copy(bikRemoved = value.get.asInstanceOf[RegistrationItem])
-        case CacheKeys.ListOfMatches    => session.copy(listOfMatches = value.get.asInstanceOf[List[EiLPerson]])
+        case CacheKeys.RegistrationList => session.copy(registrations = Some(value.get.asInstanceOf[RegistrationList]))
+        case CacheKeys.BikRemoved       => session.copy(bikRemoved = Some(value.get.asInstanceOf[RegistrationItem]))
+        case CacheKeys.ListOfMatches    => session.copy(listOfMatches = Some(value.get.asInstanceOf[List[EiLPerson]]))
         case _ =>
           Logger.warn(s"No matching keys")
           cleanSession

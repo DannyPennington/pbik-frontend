@@ -18,7 +18,10 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class PbikSession(registrations: RegistrationList, bikRemoved: RegistrationItem, listOfMatches: List[EiLPerson])
+case class PbikSession(
+  registrations: Option[RegistrationList],
+  bikRemoved: Option[RegistrationItem],
+  listOfMatches: Option[List[EiLPerson]])
 
 object PbikSession {
   implicit val PbikSessionFormats: OFormat[PbikSession] = Json.format[PbikSession]

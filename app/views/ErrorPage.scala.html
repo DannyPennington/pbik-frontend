@@ -45,7 +45,7 @@ localFormPartialRetriever: LocalFormPartialRetriever)
      @isCurrentTaxYear match {
             case utils.FormMappingsConstants.CY => {@Html(messages(errorMessage + isCurrentTaxYear , taxYearRange.cyminus1.toString, taxYearRange.cy.toString))}
             case utils.FormMappingsConstants.CYP1 => {@Html(messages(errorMessage + isCurrentTaxYear , taxYearRange.cy.toString, taxYearRange.cyplus1.toString))}
-            case _ if(code == 63091) => {
+            case _ if(code == 63091 || code == 63082) => {
 
                 @Html(messages("ServiceMessage." + (code)))
 

@@ -37,7 +37,8 @@ import views.html.ErrorPage
 import views.html.exclusion._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 
 class ExclusionListController @Inject()(
   formMappings: FormMappings,
@@ -278,11 +279,18 @@ class ExclusionListController @Inject()(
       for {
         yearAsInt             <- mapYearStringToInt(year)
         resultAlreadyExcluded <- eiLListService.currentYearEiL(iabdTypeValue, yearAsInt)
-        session               <- cachingService.fetchPbikSession
+        optionalSession       <- cachingService.fetchPbikSession
 
       } yield {
-        val listOfMatches = session.get.listOfMatches
-        searchResultsHandleValidResult(listOfMatches, resultAlreadyExcluded, year, formType, iabdTypeValue, form, None)
+        val session = optionalSession.get
+        searchResultsHandleValidResult(
+          session.listOfMatches.get,
+          resultAlreadyExcluded,
+          year,
+          formType,
+          iabdTypeValue,
+          form,
+          None)
       }
     }
 
@@ -301,32 +309,14 @@ class ExclusionListController @Inject()(
     listOfMatches.size match {
       case 0 =>
         Logger.warn("[ExclusionListController][searchResultsHandleValidResult] List of matches is empty")
-        val existsAlready = resultAlreadyExcluded.contains(form.bindFromRequest().get)
-        val message =
-          if (existsAlready) Messages("ExclusionSearch.Fail.Exists.P") else Messages("ExclusionSearch.Fail.P")
-
-        formType match {
-          case ControllersReferenceDataCodes.FORM_TYPE_NINO =>
-            Ok(
-              ninoExclusionSearchFormView(
-                controllersReferenceData.YEAR_RANGE,
-                isCurrentTaxYear,
-                iabdTypeValue,
-                form.bindFromRequest().withError("status", message),
-                existsAlready,
-                empRef = request.empRef
-              ))
-          case _ =>
-            Ok(
-              noNinoExclusionSearchFormView(
-                controllersReferenceData.YEAR_RANGE,
-                isCurrentTaxYear,
-                iabdTypeValue,
-                form.bindFromRequest().withError("status", message),
-                existsAlready,
-                empRef = request.empRef
-              ))
-        }
+        val message = Messages("ExclusionSearch.Fail.Exists.P")
+        Ok(
+          errorPageView(
+            ControllersReferenceDataCodes.VALIDATION_ERROR_REFERENCE,
+            controllersReferenceData.YEAR_RANGE,
+            "",
+            63082,
+            empRef = Some(request.empRef)))
 
       case _ =>
         Logger.info(
@@ -375,7 +365,7 @@ class ExclusionListController @Inject()(
       }
     }
 
-  def updateExclusions(year: String, iabdType: String): Action[AnyContent] =
+  def updateExclusions(year: String, iabdType: String, formType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       implicit val hc: HeaderCarrier =
         HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
@@ -415,6 +405,21 @@ class ExclusionListController @Inject()(
               taxDateUtils.getTaxYearRange(),
               empRef = Some(request.empRef))))
       }
+    }
+
+  def showExclusionConfirmation(year: String, iabdType: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      val resultFuture = cachingService.fetchPbikSession().flatMap { session =>
+        Future.successful(
+          Ok(whatNextExclusionView(
+            taxDateUtils.getTaxYearRange(),
+            year,
+            iabdType,
+            session.get.listOfMatches.get.head.firstForename + " " + session.get.listOfMatches.get.head.surname,
+            request.empRef
+          )))
+      }
+      controllersReferenceData.responseErrorHandler(resultFuture)
     }
 
   def processIndividualExclusionForm(
@@ -504,13 +509,7 @@ class ExclusionListController @Inject()(
         response.status match {
           case OK => {
             auditExclusion(exclusion = true, yearInt, excludedIndividual.get.nino, iabdType)
-            Ok(
-              whatNextExclusionView(
-                taxDateUtils.getTaxYearRange(),
-                year,
-                iabdType,
-                excludedIndividual.get.firstForename + " " + excludedIndividual.get.surname,
-                request.empRef))
+            Redirect(routes.ExclusionListController.showExclusionConfirmation(year, iabdType))
           }
           case unexpectedStatus =>
             Logger.warn(

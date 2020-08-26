@@ -406,9 +406,8 @@ class ManageRegistrationController @Inject()(
 
   def showconfirmAddCurrentTaxYear: Action[AnyContent] = (authenticate andThen noSessionCheck).async {
     implicit request =>
-      cachingService.fetchPbikSession().flatMap { session =>
-        Logger.warn(s"[Our session fetch result] ${session.get.registrations.active.filter(_.active)}")
-        val registrationList = RegistrationList(None, session.get.registrations.active.filter(_.active), None)
+      val resultFuture = cachingService.fetchPbikSession().flatMap { session =>
+        val registrationList = RegistrationList(None, session.get.registrations.get.active.filter(_.active), None)
         val form: Form[RegistrationList] = formMappings.objSelectedForm.fill(registrationList)
         Future.successful(
           Ok(
@@ -418,5 +417,6 @@ class ManageRegistrationController @Inject()(
               controllersReferenceData.YEAR_RANGE,
               empRef = request.empRef)))
       }
+      controllersReferenceData.responseErrorHandler(resultFuture)
   }
 }

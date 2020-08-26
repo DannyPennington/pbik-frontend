@@ -60,16 +60,17 @@ class WhatNextPageController @Inject()(
 
   def showWhatNextRegisteredBik: Action[AnyContent] =
     (authenticate).async { implicit request =>
-      cachingService.fetchPbikSession().map { biks =>
+      val resultFuture = cachingService.fetchPbikSession().map { session =>
         Ok(
           whatNextAddRemoveView(
             taxDateUtils.isCurrentTaxYear(controllersReferenceData.YEAR_RANGE.cy),
             controllersReferenceData.YEAR_RANGE,
             additive = true,
-            formMappings.objSelectedForm.fill(biks.get.registrations),
+            formMappings.objSelectedForm.fill(session.get.registrations.get),
             empRef = request.empRef
           ))
       }
+      controllersReferenceData.responseErrorHandler(resultFuture)
 
     }
 
@@ -90,7 +91,7 @@ class WhatNextPageController @Inject()(
     (authenticate).async { implicit request =>
       val resultFuture = cachingService.fetchPbikSession().map { session =>
         val formRegisteredList =
-          controllersReferenceData.objSelectedForm.fill(RegistrationList(active = List(session.get.bikRemoved)))
+          controllersReferenceData.objSelectedForm.fill(RegistrationList(active = List(session.get.bikRemoved.get)))
         Ok(
           whatNextAddRemoveView(
             false,
