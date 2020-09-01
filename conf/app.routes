@@ -53,7 +53,7 @@ GET         /:year/:iabdType/exclude-confirmation                 controllers.Ex
 
 POST        /:year/:iabdType/exclude-selected                    controllers.ExclusionListController.updateMultipleExclusions(year: String, iabdType: String)
 
-##GET         /:year/:iabdType/exclude-employee-remove
+GET         /:year/:iabdType/exclude-employee-remove             controllers.ExclusionListController.showRemovalConfirmation(year: String, iabdType: String)
 POST        /:year/:iabdType/exclude-employee-remove             controllers.ExclusionListController.remove(year: String, iabdType: String)
 ##GET         /:iabdType/remove-commit
 POST        /:iabdType/remove-commit                             controllers.ExclusionListController.removeExclusionsCommit(iabdType: String)

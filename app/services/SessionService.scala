@@ -41,7 +41,8 @@ class SessionService @Inject()(
   val cleanBikRemoved: Option[RegistrationItem] = Some(RegistrationItem("", false, false))
   val cleanListOfMatches: Option[List[EiLPerson]] = Some(List.empty[EiLPerson])
   val cleanEiLPerson: Option[EiLPerson] = Some(EiLPerson("", "", None, "", None, None, None, None))
-  val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches, cleanEiLPerson)
+  val cleanSession: PbikSession =
+    PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches, cleanEiLPerson)
 
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY).recover {

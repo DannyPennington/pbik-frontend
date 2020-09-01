@@ -547,11 +547,20 @@ class ExclusionListController @Inject()(
     implicit request =>
       implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
       if (exclusionsAllowed) {
-        processRemoval(
-          formMappings.individualsForm.bindFromRequest,
-          year,
-          iabdType,
-          controllersReferenceData.YEAR_RANGE)
+        formMappings.individualsForm.bindFromRequest.fold(
+          formWithErrors =>
+            Future.successful(
+              Ok(
+                errorPageView(
+                  ControllersReferenceDataCodes.INVALID_FORM_ERROR,
+                  controllersReferenceData.YEAR_RANGE,
+                  "",
+                  empRef = Some(request.empRef)))),
+          values =>
+            cachingService.cacheEiLPerson(values.active.head).map { _ =>
+              Redirect(routes.ExclusionListController.showRemovalConfirmation(year, iabdType))
+          }
+        )
       } else {
         Future.successful(
           Ok(
@@ -562,28 +571,20 @@ class ExclusionListController @Inject()(
       }
   }
 
-  def processRemoval(form: Form[EiLPersonList], year: String, iabdType: String, taxYearRange: TaxYearRange)(
-    implicit hc: HeaderCarrier,
-    request: AuthenticatedRequest[AnyContent]): Future[Result] =
-    form.fold(
-      formWithErrors =>
-        Future.successful(
-          Ok(
-            errorPageView(
-              ControllersReferenceDataCodes.INVALID_FORM_ERROR,
-              taxYearRange,
-              "",
-              empRef = Some(request.empRef)))),
-      values =>
-        Future.successful(
-          Ok(
-            removalConfirmationView(
-              taxYearRange,
-              year,
-              iabdType,
-              formMappings.individualsForm.fill(values),
-              empRef = request.empRef)))
-    )
+  def showRemovalConfirmation(year: String, iabdType: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      val futureResult = cachingService.fetchPbikSession().map { session =>
+        Ok(
+          removalConfirmationView(
+            controllersReferenceData.YEAR_RANGE,
+            year,
+            iabdType,
+            EiLPersonList(List(session.get.eiLPerson.get)),
+            empRef = request.empRef
+          ))
+      }
+      controllersReferenceData.responseErrorHandler(futureResult)
+    }
 
   def removeExclusionsCommit(iabdType: String): Action[AnyContent] = (authenticate andThen noSessionCheck).async {
     implicit request =>
