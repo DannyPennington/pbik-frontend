@@ -33,14 +33,15 @@ class SessionService @Inject()(
   appConfig: PbikAppConfig) {
 
   private object CacheKeys extends Enumeration {
-    val RegistrationList, BikRemoved, ListOfMatches = Value
+    val RegistrationList, BikRemoved, ListOfMatches, EiLPerson = Value
   }
 
   val PBIK_SESSION_KEY: String = "pbik_session"
   val cleanRegistrationList: Option[RegistrationList] = Some(RegistrationList(None, List.empty[RegistrationItem], None))
   val cleanBikRemoved: Option[RegistrationItem] = Some(RegistrationItem("", false, false))
   val cleanListOfMatches: Option[List[EiLPerson]] = Some(List.empty[EiLPerson])
-  val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches)
+  val cleanEiLPerson: Option[EiLPerson] = Some(EiLPerson("", "", None, "", None, None, None, None))
+  val cleanSession: PbikSession = PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches, cleanEiLPerson)
 
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY).recover {
@@ -58,14 +59,20 @@ class SessionService @Inject()(
   def cacheListOfMatches(value: List[EiLPerson])(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.ListOfMatches, Some(value))
 
+  def cacheEiLPerson(value: EiLPerson)(implicit headerCarrier: HeaderCarrier): Future[Option[PbikSession]] =
+    cache(CacheKeys.EiLPerson, Some(value))
+
   def resetRegistrationList()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.RegistrationList)
 
   def resetBikRemoved()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.BikRemoved)
 
-  def resetListOfMatches(value: List[EiLPerson])(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
+  def resetListOfMatches()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.ListOfMatches)
+
+  def resetEiLPerson()(implicit headerCarrier: HeaderCarrier): Future[Option[PbikSession]] =
+    cache(CacheKeys.EiLPerson)
 
   private def cache[T](key: CacheKeys.Value, value: Option[T] = None)(
     implicit hc: HeaderCarrier): Future[Option[PbikSession]] = {
@@ -74,6 +81,7 @@ class SessionService @Inject()(
         case CacheKeys.RegistrationList => session.copy(registrations = Some(value.get.asInstanceOf[RegistrationList]))
         case CacheKeys.BikRemoved       => session.copy(bikRemoved = Some(value.get.asInstanceOf[RegistrationItem]))
         case CacheKeys.ListOfMatches    => session.copy(listOfMatches = Some(value.get.asInstanceOf[List[EiLPerson]]))
+        case CacheKeys.EiLPerson        => session.copy(eiLPerson = Some(value.get.asInstanceOf[EiLPerson]))
         case _ =>
           Logger.warn(s"No matching keys")
           cleanSession

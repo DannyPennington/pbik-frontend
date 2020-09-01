@@ -414,7 +414,7 @@ class ExclusionListController @Inject()(
           Ok(whatNextExclusionView(
             taxDateUtils.getTaxYearRange(),
             year,
-            iabdType,
+            uriInformation.iabdValueURLDeMapper(iabdType),
             session.get.listOfMatches.get.head.firstForename + " " + session.get.listOfMatches.get.head.surname,
             request.empRef
           )))
@@ -509,7 +509,9 @@ class ExclusionListController @Inject()(
         response.status match {
           case OK => {
             auditExclusion(exclusion = true, yearInt, excludedIndividual.get.nino, iabdType)
-            Redirect(routes.ExclusionListController.showExclusionConfirmation(year, iabdType))
+            Redirect(
+              routes.ExclusionListController
+                .showExclusionConfirmation(year, uriInformation.iabdValueURLMapper(iabdType)))
           }
           case unexpectedStatus =>
             Logger.warn(
