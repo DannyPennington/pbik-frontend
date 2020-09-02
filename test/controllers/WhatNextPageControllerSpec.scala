@@ -16,6 +16,7 @@
 
 package controllers
 
+import akka.util.Timeout
 import config._
 import connectors.HmrcTierConnector
 import javax.inject.Inject
@@ -45,6 +46,7 @@ import utils.{ControllersReferenceData, FormMappings, TaxDateUtils, URIInformati
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.duration.DurationInt
 
 class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with TestAuthUser {
 
@@ -336,7 +338,8 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
       val formRegistrationList: Form[RegistrationList] = formMappings.objSelectedForm
       val formFilled = formRegistrationList.fill(registrationList)
       val year = TaxYear.taxYearFor(LocalDate.now).currentYear
-      val result = whatNextPageController.loadWhatNextRegisteredBIK(formFilled, year)
+      implicit val timeout: Timeout = 5 seconds
+      val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "")))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
       result.body.asInstanceOf[Strict].data.utf8String must include(
@@ -349,9 +352,10 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
       val formRegistrationList: Form[RegistrationList] = formMappings.objSelectedForm
+      implicit val timeout: Timeout = 5 seconds
       val formFilled = formRegistrationList.fill(registrationList)
       formRegistrationList.fill(registrationList)
-      val result = whatNextPageController.loadWhatNextRegisteredBIK(formFilled, 2017)
+      val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "")))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
       result.body.asInstanceOf[Strict].data.utf8String must include(
@@ -366,9 +370,8 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
       val formRegistrationList: Form[RegistrationList] = formMappings.objSelectedForm.fill(registrationListMultiple)
-      val result = await(Future {
-        whatNextPageController.loadWhatNextRegisteredBIK(formRegistrationList, 2016)
-      })
+      implicit val timeout: Timeout = 5 seconds
+      val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "")))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
       result.body.asInstanceOf[Strict].data.utf8String must include("Private medical treatment or insurance")
