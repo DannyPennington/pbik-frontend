@@ -387,7 +387,7 @@ class ExclusionListController @Inject()(
       }
     }
 
-  def updateMultipleExclusions(year: String, iabdType: String): Action[AnyContent] =
+  def updateMultipleExclusions(year: String, iabdType: String, formType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       implicit val hc: HeaderCarrier =
         HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))

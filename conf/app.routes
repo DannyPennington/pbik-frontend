@@ -51,7 +51,7 @@ POST        /:year/:iabdType/:formType/exclude-employee-results  controllers.Exc
 
 GET         /:year/:iabdType/exclude-confirmation                 controllers.ExclusionListController.showExclusionConfirmation(year: String, iabdType: String)
 
-POST        /:year/:iabdType/exclude-selected                    controllers.ExclusionListController.updateMultipleExclusions(year: String, iabdType: String)
+POST        /:year/:iabdType/:formType/exclude-selected          controllers.ExclusionListController.updateMultipleExclusions(year: String, iabdType: String, formType: String)
 
 GET         /:year/:iabdType/exclude-employee-remove             controllers.ExclusionListController.showRemovalConfirmation(year: String, iabdType: String)
 POST        /:year/:iabdType/exclude-employee-remove             controllers.ExclusionListController.remove(year: String, iabdType: String)

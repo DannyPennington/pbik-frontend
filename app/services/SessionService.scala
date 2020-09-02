@@ -75,6 +75,13 @@ class SessionService @Inject()(
   def resetEiLPerson()(implicit headerCarrier: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.EiLPerson)
 
+  def resetAll()(implicit headerCarrier: HeaderCarrier): Future[Option[PbikSession]] = {
+    resetBikRemoved()
+    resetEiLPerson()
+    resetRegistrationList()
+    resetListOfMatches()
+  }
+
   private def cache[T](key: CacheKeys.Value, value: Option[T] = None)(
     implicit hc: HeaderCarrier): Future[Option[PbikSession]] = {
     def selectKeysToCache(session: PbikSession): PbikSession =

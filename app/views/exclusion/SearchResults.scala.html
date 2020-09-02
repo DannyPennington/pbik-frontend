@@ -92,7 +92,7 @@ repeatWithIndex: RepeatWithIndex)
                     <div class="form-group">
                 }
 
-                  @helpers.form(action = routes.ExclusionListController.updateMultipleExclusions(year, uriInformation.iabdValueURLMapper(iabdType)),
+                  @helpers.form(action = routes.ExclusionListController.updateMultipleExclusions(year, uriInformation.iabdValueURLMapper(iabdType), formType),
                     'onsubmit -> "gaEventConfirmExcludeMulti()") {
 
                     <h2>@messages("ExclusionSearch.caption.multi")</h2>
