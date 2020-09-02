@@ -592,63 +592,58 @@ class ExclusionListController @Inject()(
       val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
       val taxYearRange = taxDateUtils.getTaxYearRange()
       if (exclusionsAllowed) {
-        processRemovalCommit(formMappings.individualsForm.bindFromRequest, iabdTypeValue, taxYearRange)
+        cachingService.fetchPbikSession().flatMap { session =>
+          val individual = session.get.eiLPerson.get
+          val year = taxYearRange.cy
+          val removalsList = List(individual)
+          val futureExclude = tierConnector
+            .genericPostCall(
+              uriInformation.baseUrl,
+              uriInformation.exclusionPostRemovePath(iabdTypeValue),
+              request.empRef,
+              year,
+              individual)
+            .map { response =>
+              response.status match {
+                case OK => {
+                  auditExclusion(exclusion = false, year, splunkLogger.extractListNino(removalsList), iabdType)
+                  Redirect(routes.ExclusionListController.showRemovalWhatsNext(iabdType))
+                }
+                case unexpectedStatus =>
+                  Logger.warn(
+                    s"[ExclusionListController][processRemovalCommit] Exclusion list update operation was unable to be executed successfully:" +
+                      s" received $unexpectedStatus response")
+                  Ok(
+                    errorPageView(
+                      "Could not perform update operation",
+                      controllersReferenceData.YEAR_RANGE,
+                      "",
+                      empRef = Some(request.empRef)))
+                    .withSession(request.session + (SessionKeys.sessionId -> s"session-${UUID.randomUUID}"))
+              }
+            }
+          controllersReferenceData.responseErrorHandler(futureExclude)
+        }
       } else {
         Future.successful(Ok(
           errorPageView(ControllersReferenceDataCodes.FEATURE_RESTRICTED, taxYearRange, empRef = Some(request.empRef))))
       }
   }
 
-  def processRemovalCommit(form: Form[EiLPersonList], iabdType: String, taxYearRange: TaxYearRange)(
-    implicit hc: HeaderCarrier,
-    request: AuthenticatedRequest[AnyContent]): Future[Result] = {
-    val year = taxYearRange.cy
-    val removalsList = form.fold(
-      formWithErrors => List.empty[EiLPerson],
-      values => {
-        values.active
+  def showRemovalWhatsNext(iabdType: String): Action[AnyContent] = (authenticate andThen noSessionCheck).async {
+    implicit request =>
+      val futureResult = cachingService.fetchPbikSession().map { session =>
+        val individual = session.get.eiLPerson.get
+        Ok(
+          whatNextRescindView(
+            taxDateUtils.getTaxYearRange(),
+            ControllersReferenceDataCodes.NEXT_TAX_YEAR,
+            iabdType,
+            individual.firstForename + " " + individual.surname,
+            request.empRef
+          ))
       }
-    )
-    val registrationList: RegistrationList =
-      RegistrationList(None, List(RegistrationItem(iabdType, active = false, enabled = false)))
-
-    val individual = removalsList.head
-    val iabdTypeValue = uriInformation.iabdValueURLMapper(iabdType)
-    val futureExclude = tierConnector
-      .genericPostCall(
-        uriInformation.baseUrl,
-        uriInformation.exclusionPostRemovePath(iabdType),
-        request.empRef,
-        year,
-        individual)
-      .map { response =>
-        response.status match {
-          case OK => {
-            auditExclusion(exclusion = false, year, splunkLogger.extractListNino(removalsList), iabdType)
-            Ok(
-              whatNextRescindView(
-                taxDateUtils.getTaxYearRange(),
-                ControllersReferenceDataCodes.NEXT_TAX_YEAR,
-                iabdTypeValue,
-                individual.firstForename + " " + individual.surname,
-                request.empRef
-              ))
-              .withSession(request.session + (SessionKeys.sessionId -> s"session-${UUID.randomUUID}"))
-          }
-          case unexpectedStatus =>
-            Logger.warn(
-              s"[ExclusionListController][processRemovalCommit] Exclusion list update operation was unable to be executed successfully:" +
-                s" received $unexpectedStatus response")
-            Ok(
-              errorPageView(
-                "Could not perform update operation",
-                controllersReferenceData.YEAR_RANGE,
-                "",
-                empRef = Some(request.empRef)))
-              .withSession(request.session + (SessionKeys.sessionId -> s"session-${UUID.randomUUID}"))
-        }
-      }
-    controllersReferenceData.responseErrorHandler(futureExclude)
+      controllersReferenceData.responseErrorHandler(futureResult)
   }
 
   private def auditExclusion(exclusion: Boolean, year: Int, employee: String, iabdType: String)(

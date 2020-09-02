@@ -55,6 +55,6 @@ POST        /:year/:iabdType/exclude-selected                    controllers.Exc
 
 GET         /:year/:iabdType/exclude-employee-remove             controllers.ExclusionListController.showRemovalConfirmation(year: String, iabdType: String)
 POST        /:year/:iabdType/exclude-employee-remove             controllers.ExclusionListController.remove(year: String, iabdType: String)
-##GET         /:iabdType/remove-commit
+GET         /:iabdType/remove-commit                             controllers.ExclusionListController.showRemovalWhatsNext(iabdType: String)
 POST        /:iabdType/remove-commit                             controllers.ExclusionListController.removeExclusionsCommit(iabdType: String)
 
