@@ -300,7 +300,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     }
   }
 
-  "When loading the performPageLoad without nacigating from the overview page, an unauthorised user" should {
+  "When loading the performPageLoad without navigating from the overview page, an unauthorised user" should {
     "see the users already excluded" in {
       implicit val timeout: Timeout = 10 seconds
       val result = await(mockExclusionListController.performPageLoad("cy", "car").apply(mockrequest))(timeout)
@@ -364,6 +364,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       val result =
         await(mockExclusionListController.withOrWithoutNinoDecision("cy", "car").apply(mockrequest))(5 seconds)
       result.header.status must be(303)
+      result.body.asInstanceOf[Strict].data.utf8String must include(title)
       val nextUrl = redirectLocation(Future(result)(scala.concurrent.ExecutionContext.Implicits.global)) match {
         case Some(s: String) => s
         case _               => ""
@@ -379,7 +380,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
       val result = await(mockExclusionController.withOrWithoutNinoDecision("cy", "car").apply(mockrequest))(timeout)
-      result.header.status must be(OK)
+      result.header.status must be(FORBIDDEN)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -392,7 +393,6 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] = mockrequest.withFormUrlEncodedBody(
         "confirmation" -> ControllersReferenceDataCodes.FORM_TYPE_NINO
       )
-
       val result = await(mockExclusionListController.withOrWithoutNinoDecision("cy", "car").apply(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
@@ -831,6 +831,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " redirect to the what next page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
+      val TEST_FORM_TYPE = "no-nino"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
@@ -838,7 +839,9 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
       val result =
-        await(mockExclusionListController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
+        await(
+          mockExclusionListController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD, TEST_FORM_TYPE)(formrequest))(
+          timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -848,6 +851,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " redirect back to the overview page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
+      val TEST_FORM_TYPE = "no-nino"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
@@ -856,7 +860,8 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
       val result =
-        await(mockExclusionController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
+        await(mockExclusionController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD, TEST_FORM_TYPE)(formrequest))(
+          timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }

@@ -50,7 +50,7 @@ class ConfirmNextYearViewSpec extends PBIKViewSpec {
   "nextYearPage" must {
     behave like pageWithTitle(messages("AddBenefits.Confirm.Single.Title"))
     behave like pageWithHeader(messages("AddBenefits.Confirm.Single.Title"))
-    behave like pageWithContinueButtonForm("/payrollbik/cy1/add-benefit-expense-confirmed", "Register this benefit")
+    behave like pageWithContinueButtonForm("/payrollbik/cy1/add-benefit-expense", "Register this benefit")
 
   }
 

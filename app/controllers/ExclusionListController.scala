@@ -183,7 +183,7 @@ class ExclusionListController @Inject()(
         controllersReferenceData.responseErrorHandler(resultFuture)
       } else {
         Future.successful(
-          InternalServerError(
+          Forbidden(
             errorPageView(
               ControllersReferenceDataCodes.FEATURE_RESTRICTED,
               taxDateUtils.getTaxYearRange(),

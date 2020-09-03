@@ -37,6 +37,7 @@ import play.api.libs.json
 import play.api.mvc._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import services.SessionService
 import support.{TestAuthUser, TestCYEnabledConfig}
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.logging.SessionId
@@ -57,6 +58,7 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
     .overrides(bind[NoSessionCheckAction].to(classOf[TestNoSessionCheckAction]))
     .overrides(bind[AppConfig].toInstance(TestCYEnabledConfig))
     .overrides(bind[HmrcTierConnector].toInstance(mock(classOf[HmrcTierConnector])))
+    .overrides(bind[SessionService].toInstance(mock(classOf[SessionService])))
     .build()
 
   implicit val lang: Lang = Lang("en-GB")
@@ -178,6 +180,14 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
       .thenReturn(Future.successful(CYCache.filter { x: Bik =>
         Integer.parseInt(x.iabdType) >= 15
       }))
+
+    when(r.cachingService.fetchPbikSession()(any[HeaderCarrier]))
+      .thenReturn(Future.successful(Some(PbikSession(
+        Some(RegistrationList(None, List(RegistrationItem("31", false, false)), None)),
+        Some(RegistrationItem("31", false, false)),
+        Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
+        Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+      ))))
 
     r
   }

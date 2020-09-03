@@ -85,7 +85,6 @@ class HomePageController @Inject()(
   }
 
   def onPageLoad: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
-    cachingService.resetAll()
     val taxYearRange = taxDateUtils.getTaxYearRange()
     val pageLoadFuture = for {
       // Get the available count of biks available for each tax year

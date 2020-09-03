@@ -16,6 +16,8 @@
 
 package controllers
 
+import java.util.UUID
+
 import akka.util.Timeout
 import config._
 import connectors.HmrcTierConnector
@@ -36,11 +38,11 @@ import play.api.libs.json
 import play.api.mvc._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.BikListService
+import services.{BikListService, SessionService}
 import support.TestAuthUser
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.logging.SessionId
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionKeys}
 import uk.gov.hmrc.time.TaxYear
 import utils.{ControllersReferenceData, FormMappings, TaxDateUtils, URIInformation}
 
@@ -57,6 +59,7 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
   ).configure(config)
     .overrides(bind[BikListService].toInstance(mock(classOf[StubBikListService])))
     .overrides(bind[HmrcTierConnector].toInstance(mock(classOf[HmrcTierConnector])))
+    .overrides(bind[SessionService].toInstance(mock(classOf[SessionService])))
     .build()
 
   implicit val lang = Lang("en-GB")
@@ -326,17 +329,23 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
         Integer.parseInt(x.iabdType) >= 15
       }))
 
+    when(w.cachingService.fetchPbikSession()(any[HeaderCarrier]))
+      .thenReturn(Future.successful(Some(PbikSession(
+        Some(RegistrationList(None, List(RegistrationItem("31", false, false)), None)),
+        Some(RegistrationItem("31", false, false)),
+        Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
+        Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+      ))))
+
     w
   }
 
   "When loading the what next page" must {
-    "(Register a BIK current year) Single benefit- state the status is ok and correct page is displayed" in {
+    "(Register a BIK current year) Single benefit - state the status is ok and correct page is displayed" in {
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-      val formRegistrationList: Form[RegistrationList] = formMappings.objSelectedForm
-      val formFilled = formRegistrationList.fill(registrationList)
       val year = TaxYear.taxYearFor(LocalDate.now).currentYear
       implicit val timeout: Timeout = 5 seconds
       val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "")))(timeout)

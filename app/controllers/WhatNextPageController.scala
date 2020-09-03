@@ -59,7 +59,7 @@ class WhatNextPageController @Inject()(
   }
 
   def showWhatNextRegisteredBik: Action[AnyContent] =
-    (authenticate).async { implicit request =>
+    (authenticate andThen noSessionCheck).async { implicit request =>
       val resultFuture = cachingService.fetchPbikSession().map { session =>
         Ok(
           whatNextAddRemoveView(
@@ -88,7 +88,7 @@ class WhatNextPageController @Inject()(
   }
 
   def showWhatNextRemovedBik: Action[AnyContent] =
-    (authenticate).async { implicit request =>
+    (authenticate andThen noSessionCheck).async { implicit request =>
       val resultFuture = cachingService.fetchPbikSession().map { session =>
         val formRegisteredList =
           controllersReferenceData.objSelectedForm.fill(RegistrationList(active = List(session.get.bikRemoved.get)))
