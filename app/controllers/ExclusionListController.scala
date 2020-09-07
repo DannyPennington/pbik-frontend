@@ -289,7 +289,6 @@ class ExclusionListController @Inject()(
           year,
           formType,
           iabdTypeValue,
-          form,
           None)
       }
     }
@@ -304,7 +303,6 @@ class ExclusionListController @Inject()(
     isCurrentTaxYear: String,
     formType: String,
     iabdTypeValue: String,
-    form: Form[EiLPerson],
     individualSelectionOption: Option[String])(implicit request: AuthenticatedRequest[_]): Result =
     listOfMatches.size match {
       case 0 =>
@@ -314,7 +312,7 @@ class ExclusionListController @Inject()(
           errorPageView(
             ControllersReferenceDataCodes.VALIDATION_ERROR_REFERENCE,
             controllersReferenceData.YEAR_RANGE,
-            "",
+            message,
             63082,
             empRef = Some(request.empRef)))
 
@@ -329,9 +327,11 @@ class ExclusionListController @Inject()(
             controllersReferenceData.YEAR_RANGE,
             isCurrentTaxYear,
             iabdTypeValue,
+            EiLPersonList(listOfMatches),
             filledListOfMatchesForm,
             formType,
-            empRef = request.empRef))
+            empRef = request.empRef
+          ))
 
     }
 
@@ -440,9 +440,11 @@ class ExclusionListController @Inject()(
               taxYearRange,
               isCurrentTaxYear,
               iabdType,
+              EiLPersonList(List.empty[EiLPerson]),
               formWithErrors,
               ControllersReferenceDataCodes.FORM_TYPE_NONINO,
-              empRef = request.empRef))
+              empRef = request.empRef
+            ))
       },
       values => {
         validateRequest(isCurrentTaxYear, iabdTypeValue)
@@ -494,7 +496,7 @@ class ExclusionListController @Inject()(
       RegistrationList(None, List(RegistrationItem(iabdType, active = false, enabled = false)))
 
     Logger.info(
-      s"[ExclusionListController][searchResultsHandleValidResult] Committing Exclusion for scheme ${request.empRef.toString}" +
+      s"[ExclusionListController][commitExclusion] Committing Exclusion for scheme ${request.empRef.toString}" +
         s", with employees Optimistic Lock: ${excludedIndividual.map(eiLPerson => eiLPerson.perOptLock).getOrElse(0)}"
     )
 
