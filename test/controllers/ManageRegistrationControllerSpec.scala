@@ -180,15 +180,6 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
       .thenReturn(Future.successful(CYCache.filter { x: Bik =>
         Integer.parseInt(x.iabdType) >= 15
       }))
-
-    when(r.cachingService.fetchPbikSession()(any[HeaderCarrier]))
-      .thenReturn(Future.successful(Some(PbikSession(
-        Some(RegistrationList(None, List(RegistrationItem("31", false, false)), None)),
-        Some(RegistrationItem("31", false, false)),
-        Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-        Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
-      ))))
-
     r
   }
 
@@ -301,7 +292,7 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
-
+// TODO FIX ME
   "When loading the updateRegisteredBenefitTypes, an authorised user" should {
     "persist their changes and be redirected to the what next page" in {
       val mockRegistrationList = RegistrationList(
@@ -309,12 +300,15 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("software", None)))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val title = Messages("whatNext.subHeading")
       implicit val timeout: FiniteDuration = timeoutValue
       val result = await(registrationController.updateRegisteredBenefitTypes.apply(mockRequestForm))(timeout)
-      result.header.status must be(OK) // 200
+      result.header.status must be(303) // 200
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -345,17 +339,29 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
 
   "When a user removes a benefit" should {
     "selecting 'software' should redirect to what next page" in {
+      when(registrationController.cachingService.fetchPbikSession()(any[HeaderCarrier]))
+        .thenReturn(
+          Future.successful(
+            Some(
+              PbikSession(
+                Some(RegistrationList(None, List(RegistrationItem("31", true, false)), None)),
+                Some(RegistrationItem("31", true, false)),
+                None,
+                None))))
       val mockRegistrationList = RegistrationList(
         None,
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("software", None)))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val title = Messages("whatNext.subHeading")
       implicit val timeout: FiniteDuration = timeoutValue
       val result = await(registrationController.updateRegisteredBenefitTypes.apply(mockRequestForm))(timeout)
-      result.header.status must be(OK) // 200
+      result.header.status must be(303) // 200
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -367,7 +373,10 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("guidance", None)))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val title = Messages("whatNext.subHeading")
       implicit val timeout: FiniteDuration = timeoutValue
@@ -384,7 +393,10 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("not-clear", None)))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val title = Messages("whatNext.subHeading")
       implicit val timeout: FiniteDuration = timeoutValue
@@ -401,7 +413,10 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("not-offering", None)))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val title = Messages("whatNext.subHeading")
       implicit val timeout: FiniteDuration = timeoutValue
@@ -418,7 +433,10 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("other", Some("other info here"))))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val title = Messages("whatNext.subHeading")
       implicit val timeout: FiniteDuration = timeoutValue
@@ -435,7 +453,10 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
         List(RegistrationItem("31", active = true, enabled = true)),
         Some(BinaryRadioButtonWithDesc("other", None)))
       val form = formMappings.objSelectedForm.fill(mockRegistrationList)
-      val mockRequestForm = mockrequest.withFormUrlEncodedBody(form.data.toSeq: _*)
+      val mockRequestForm = mockrequest
+        .withFormUrlEncodedBody(form.data.toSeq: _*)
+        .withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")
       implicit val request: FakeRequest[AnyContentAsFormUrlEncoded] = mockRequestForm
       val errorMsg = Messages("RemoveBenefits.reason.other.required")
       implicit val timeout: FiniteDuration = timeoutValue

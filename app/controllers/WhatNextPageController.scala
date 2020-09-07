@@ -59,46 +59,32 @@ class WhatNextPageController @Inject()(
   }
 
   def showWhatNextRegisteredBik: Action[AnyContent] =
-    (authenticate andThen noSessionCheck).async { implicit request =>
+    (authenticate).async { implicit request =>
       val resultFuture = cachingService.fetchPbikSession().map { session =>
         Ok(
           whatNextAddRemoveView(
             taxDateUtils.isCurrentTaxYear(controllersReferenceData.YEAR_RANGE.cy),
             controllersReferenceData.YEAR_RANGE,
             additive = true,
-            formMappings.objSelectedForm.fill(session.get.registrations.get),
+            RegistrationList(active = session.get.registrations.get.active.filter(item => item.active)),
             empRef = request.empRef
           ))
       }
       controllersReferenceData.responseErrorHandler(resultFuture)
-
     }
 
-  def loadWhatNextRemovedBIK(formRegisteredList: Form[RegistrationList], year: Int)(
-    implicit request: AuthenticatedRequest[_]): Result = {
-    val yearCalculated = calculateTaxYear(taxDateUtils.isCurrentTaxYear(year))
-
-    Ok(
-      whatNextAddRemoveView(
-        taxDateUtils.isCurrentTaxYear(year),
-        controllersReferenceData.YEAR_RANGE,
-        additive = false,
-        formRegisteredList,
-        empRef = request.empRef))
-  }
-
   def showWhatNextRemovedBik: Action[AnyContent] =
-    (authenticate andThen noSessionCheck).async { implicit request =>
+    (authenticate).async { implicit request =>
       val resultFuture = cachingService.fetchPbikSession().map { session =>
-        val formRegisteredList =
-          controllersReferenceData.objSelectedForm.fill(RegistrationList(active = List(session.get.bikRemoved.get)))
+        val removedBikAsList: RegistrationList = RegistrationList(active = List(session.get.bikRemoved.get))
         Ok(
           whatNextAddRemoveView(
-            false,
+            taxDateUtils.isCurrentTaxYear(controllersReferenceData.YEAR_RANGE.cyplus1),
             controllersReferenceData.YEAR_RANGE,
             additive = false,
-            formRegisteredList,
-            empRef = request.empRef))
+            removedBikAsList,
+            empRef = request.empRef
+          ))
       }
       controllersReferenceData.responseErrorHandler(resultFuture)
     }

@@ -37,7 +37,7 @@ import play.api.libs.json
 import play.api.mvc._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.EiLListService
+import services.{EiLListService, SessionService}
 import support._
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.HeaderCarrier
@@ -58,6 +58,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     .overrides(bind[NoSessionCheckAction].to(classOf[TestNoSessionCheckAction]))
     .overrides(bind[EiLListService].to(classOf[StubEiLListService]))
     .overrides(bind[HmrcTierConnector].toInstance(mock(classOf[HmrcTierConnector])))
+    .overrides(bind[SessionService].toInstance(mock(classOf[SessionService])))
     .build()
 
   implicit val lang = Lang("en-GB")
@@ -359,10 +360,22 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
 
   "When loading the withOrWithoutNinoDecision page with the form omitted, an authorised user" must {
     "see the page in order to confirm their decision" in {
+      when(mockExclusionListController.cachingService.fetchPbikSession()(any[HeaderCarrier]))
+        .thenReturn(Future.successful(Some(PbikSession(
+          Some(RegistrationList(None, List(RegistrationItem("31", false, false)), None)),
+          Some(RegistrationItem("31", false, false)),
+          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
+          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+        ))))
       val title = Messages("ExclusionNinoDecision.title").substring(0, 10)
       //UnsignedTokenProvider.generateToken
       val result =
-        await(mockExclusionListController.withOrWithoutNinoDecision("cy", "car").apply(mockrequest))(5 seconds)
+        await(
+          mockExclusionListController
+            .withOrWithoutNinoDecision("cy", "car")
+            .apply(mockrequest.withSession(
+              "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")))(
+          5 seconds)
       result.header.status must be(303)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
       val nextUrl = redirectLocation(Future(result)(scala.concurrent.ExecutionContext.Implicits.global)) match {
