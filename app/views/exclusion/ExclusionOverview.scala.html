@@ -74,23 +74,19 @@ empRef: EmpRef)(implicit request:Request[_], messages: Messages)
 
             @for( (person, index) <- current.zipWithIndex ) {
             <li>
-            @helpers.form(action=routes.ExclusionListController.remove(isCurrentTaxYear, uriInformation.iabdValueURLMapper(iabdType))){
             <div>
                 <div class="cya-answer" id='name-@person.nino'>@person.surname, @person.firstForename </div>
-                <div class="cya-answer" class="nino" id = 'nino-@person.nino'>
-                    @person.nino
-                </div>
-                <div  class="cya-answer" id='dob-@person.nino'>@person.worksPayrollNumber</div>
+                <div class="cya-answer" id='nino-@person.nino'>@person.nino</div>
+                <div class="cya-answer" id='dob-@person.nino'>@person.worksPayrollNumber</div>
                 @if(isCurrentTaxYear!="cy"){
                 <div class="cya-answer">
-                    <button class="button--link-style" id='@person.nino-remove' data-journey-click="link - click:@messages("ExclusionOverview.title"):@messages("Service.removeexclusion")">
+                    <a class="button--link-style" id='@person.nino-remove' href="@controllers.routes.ExclusionListController.remove(isCurrentTaxYear, uriInformation.iabdValueURLMapper(iabdType), person.nino)" data-journey-click="link - click:@messages("ExclusionOverview.title"):@messages("Service.removeexclusion")">
                         @messages("Service.removeexclusion")<span class="visuallyhidden">@messages("Service.for") @person.firstForename @person.surname @person.nino</span>
-                    </button>
+                    </a>
                 </div>
                 }
 
             </div>
-            }
             }
             </li>
         </ol>

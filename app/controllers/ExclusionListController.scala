@@ -99,6 +99,7 @@ class ExclusionListController @Inject()(
           nextYearList: (Map[String, String], List[Bik]) <- bikListService.nextYearList
           currentYearEIL: List[EiLPerson]                <- eiLListService.currentYearEiL(iabdTypeValue, year)
         } yield {
+          cachingService.cacheCurrentExclusions(currentYearEIL)
           Ok(
             exclusionOverviewView(
               controllersReferenceData.YEAR_RANGE,
@@ -545,25 +546,20 @@ class ExclusionListController @Inject()(
       }
     }
 
-  def remove(year: String, iabdType: String): Action[AnyContent] = (authenticate andThen noSessionCheck).async {
-    implicit request =>
+  def remove(year: String, iabdType: String, nino: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
       implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
+
       if (exclusionsAllowed) {
-        formMappings.individualsForm.bindFromRequest.fold(
-          formWithErrors =>
-            Future.successful(
-              Ok(
-                errorPageView(
-                  ControllersReferenceDataCodes.INVALID_FORM_ERROR,
-                  controllersReferenceData.YEAR_RANGE,
-                  "",
-                  empRef = Some(request.empRef)))),
-          values =>
-            cachingService.cacheEiLPerson(values.active.head).map { _ =>
-              Redirect(routes.ExclusionListController.showRemovalConfirmation(year, iabdType))
+        cachingService.fetchPbikSession().flatMap { session =>
+          val selectedPerson: EiLPerson = session.get.currentExclusions.get.filter(person => person.nino == nino).head
+          Logger.warn(s"[ExclusionListController][remove] Redirecting to removal confirmation ")
+          cachingService.cacheEiLPerson(selectedPerson).map { _ =>
+            Redirect(routes.ExclusionListController.showRemovalConfirmation(year, iabdType))
           }
-        )
+        }
       } else {
+        Logger.warn("[ExclusionListController][remove] Exclusions not allowed, showing error page")
         Future.successful(
           Ok(
             errorPageView(
@@ -571,7 +567,7 @@ class ExclusionListController @Inject()(
               taxDateUtils.getTaxYearRange(),
               empRef = Some(request.empRef))))
       }
-  }
+    }
 
   def showRemovalConfirmation(year: String, iabdType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>

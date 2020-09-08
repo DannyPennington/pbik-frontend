@@ -18,13 +18,8 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class PbikSession(
-  registrations: Option[RegistrationList],
-  bikRemoved: Option[RegistrationItem],
-  listOfMatches: Option[List[EiLPerson]],
-  eiLPerson: Option[EiLPerson],
-  currentExclusions: Option[List[EiLPerson]])
+case class ExclusionNino(nino: String)
 
-object PbikSession {
-  implicit val PbikSessionFormats: OFormat[PbikSession] = Json.format[PbikSession]
+object ExclusionNino {
+  implicit val exclusionNinoFormats: OFormat[ExclusionNino] = Json.format[ExclusionNino]
 }
