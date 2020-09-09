@@ -336,7 +336,8 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
           Some(RegistrationList(None, List(RegistrationItem("30", false, false)), None)),
           Some(RegistrationItem("30", false, false)),
           Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
+          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)))
         ))))
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
@@ -359,7 +360,8 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
           Some(RegistrationList(None, List(RegistrationItem("30", false, false)), None)),
           Some(RegistrationItem("30", false, false)),
           Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
+          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)))
         ))))
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
@@ -384,7 +386,8 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
             None)),
           Some(RegistrationItem("30", false, false)),
           Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
+          None
         ))))
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
@@ -400,7 +403,7 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
       result.body.asInstanceOf[Strict].data.utf8String must include("Services supplied")
     }
 
- /*   "(Remove a BIK)- state the status is ok and correct page is displayed" in {
+    /*   "(Remove a BIK)- state the status is ok and correct page is displayed" in {
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
@@ -415,7 +418,7 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
       result.body.asInstanceOf[Strict].data.utf8String must include("Benefit removed")
       result.body.asInstanceOf[Strict].data.utf8String must include(whatNextRemoveMsg)
     }
-*/
+   */
   }
 
 }

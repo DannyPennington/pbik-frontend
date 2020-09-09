@@ -345,7 +345,8 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
             Some(
               PbikSession(
                 Some(RegistrationList(None, List(RegistrationItem("31", true, false)), None)),
-                Some(RegistrationItem("31", true, false)),
+                None,
+                None,
                 None,
                 None))))
       val mockRegistrationList = RegistrationList(

@@ -365,7 +365,8 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
           Some(RegistrationList(None, List(RegistrationItem("31", false, false)), None)),
           Some(RegistrationItem("31", false, false)),
           Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))
+          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
+          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)))
         ))))
       val title = Messages("ExclusionNinoDecision.title").substring(0, 10)
       //UnsignedTokenProvider.generateToken
@@ -663,12 +664,9 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
       implicit val timeout: Timeout = 5 seconds
-      val result = await(
-        mockExclusionListController.processExclusionForm(
-          controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople)),
-          TEST_YEAR_CODE,
-          TEST_IABD_VALUE,
-          controllersReferenceData.YEAR_RANGE))(timeout)
+      val result =
+        await(mockExclusionListController.updateExclusions(TEST_YEAR_CODE, TEST_IABD_VALUE).apply(FakeRequest("", "")))(
+          timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -681,11 +679,13 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       val TEST_IABD = "car"
       val TEST_YEAR_CODE = "cy"
+      val TEST_NINO = "AA111111A"
       val title = Messages("ExclusionRemovalConfirmation.title")
       //UnsignedTokenProvider.generateToken
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
       implicit val timeout: Timeout = 5 seconds
-      val result = await(mockExclusionListController.remove(TEST_YEAR_CODE, TEST_IABD)(FakeRequest("", "")))(timeout)
+      val result =
+        await(mockExclusionListController.remove(TEST_YEAR_CODE, TEST_IABD, TEST_NINO)(FakeRequest("", "")))(timeout)
 
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
@@ -774,13 +774,14 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " show the confirmation page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
+      val TEST_NINO = "AA111111A"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
       val title = Messages("ExclusionRemovalConfirmation.title")
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
-      val result = await(mockExclusionListController.remove(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
+      val result = await(mockExclusionListController.remove(TEST_YEAR_CODE, TEST_IABD, TEST_NINO)(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -790,6 +791,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " should show an error page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
+      val TEST_NINO = "AA111111A"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
@@ -797,7 +799,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       val mockExclusionController = app.injector.instanceOf[MockExclusionsDisallowedController]
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
-      val result = await(mockExclusionController.remove(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
+      val result = await(mockExclusionController.remove(TEST_YEAR_CODE, TEST_IABD, TEST_NINO)(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -807,15 +809,13 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " redirect to the what next page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
-      val TEST_FORM_TYPE = "nino"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
       val title = Messages("whatNext.exclude.heading")
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
-      val result = await(
-        mockExclusionListController.updateExclusions(TEST_YEAR_CODE, TEST_IABD, TEST_FORM_TYPE)(formrequest))(timeout)
+      val result = await(mockExclusionListController.updateExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -825,7 +825,6 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " redirect back to the overview page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
-      val TEST_FORM_TYPE = "nino"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
@@ -834,7 +833,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
       val result =
-        await(mockExclusionController.updateExclusions(TEST_YEAR_CODE, TEST_IABD, TEST_FORM_TYPE)(formrequest))(timeout)
+        await(mockExclusionController.updateExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -844,7 +843,6 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " redirect to the what next page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
-      val TEST_FORM_TYPE = "no-nino"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
@@ -852,9 +850,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
       val result =
-        await(
-          mockExclusionListController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD, TEST_FORM_TYPE)(formrequest))(
-          timeout)
+        await(mockExclusionListController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -864,7 +860,6 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
     " redirect back to the overview page" in {
       val TEST_YEAR_CODE = "cyp1"
       val TEST_IABD = "car"
-      val TEST_FORM_TYPE = "no-nino"
       val f = controllersReferenceData.individualsForm.fill(EiLPersonList(ListOfPeople))
       implicit val formrequest: FakeRequest[AnyContentAsFormUrlEncoded] =
         mockrequest.withFormUrlEncodedBody(f.data.toSeq: _*)
@@ -873,8 +868,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       //UnsignedTokenProvider.generateToken
       implicit val timeout: Timeout = 5 seconds
       val result =
-        await(mockExclusionController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD, TEST_FORM_TYPE)(formrequest))(
-          timeout)
+        await(mockExclusionController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
@@ -894,12 +888,12 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
       implicit val timeout: Timeout = 5 seconds
       val result = await(
-        mockExclusionListController.processIndividualExclusionForm(
-          controllersReferenceData.individualsFormWithRadio.fill(("", EiLPersonList(ListOfPeople))),
-          TEST_YEAR_CODE,
-          TEST_IABD_VALUE,
-          controllersReferenceData.YEAR_RANGE
-        ))(timeout)
+        mockExclusionListController
+          .updateMultipleExclusions(
+            TEST_YEAR_CODE,
+            TEST_IABD_VALUE
+          )
+          .apply(FakeRequest("", "")))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
       result.body.asInstanceOf[Strict].data.utf8String must include(excludedText)
