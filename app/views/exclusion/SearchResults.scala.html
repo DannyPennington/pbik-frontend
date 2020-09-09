@@ -93,7 +93,7 @@ repeatWithIndex: RepeatWithIndex)
                     <div class="form-group">
                 }
 
-                  @helpers.form(action = routes.ExclusionListController.updateMultipleExclusions(year, uriInformation.iabdValueURLMapper(iabdType), formType),
+                  @helpers.form(action = routes.ExclusionListController.updateMultipleExclusions(year, uriInformation.iabdValueURLMapper(iabdType)),
                     'onsubmit -> "gaEventConfirmExcludeMulti()") {
 
                     <h2>@messages("ExclusionSearch.caption.multi")</h2>
@@ -173,7 +173,7 @@ repeatWithIndex: RepeatWithIndex)
                 </div>
 
                 <p>
-                    <a href="@routes.ExclusionListController.afterSearchResultsNoForm(year, uriInformation.iabdValueURLMapper(iabdType))" type="submit" class="button" onclick="gaEventConfirmExclude()" role="button" id="button-confirm">@messages("Service.confirm")</a>
+                    <a href="@routes.ExclusionListController.updateExclusions(year, uriInformation.iabdValueURLMapper(iabdType))" type="submit" class="button" onclick="gaEventConfirmExclude()" role="button" id="button-confirm">@messages("Service.confirm")</a>
                     <p><a class="button-link" id="link-exlusion-back" onclick="gaEvent('Click back to exclusion overview','From: Search results')"
                           href="@routes.ExclusionListController.performPageLoad(year,uriInformation.iabdValueURLMapper(iabdType))">
                         @messages("Service.back.excluded")</a></p>

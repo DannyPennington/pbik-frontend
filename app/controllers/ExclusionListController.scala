@@ -364,7 +364,7 @@ class ExclusionListController @Inject()(
       }
     }
 
-  def afterSearchResultsWithForm(year: String, iabdType: String): Action[AnyContent] =
+  def updateMultipleExclusions(year: String, iabdType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       cachingService.fetchPbikSession().flatMap { session =>
         formMappings.individualSelectionForm
@@ -381,23 +381,48 @@ class ExclusionListController @Inject()(
                 request.empRef
               ))),
             values => {
-              val excludedPerson = session.get.listOfMatches.get.find(person => person.nino == values.nino)
+              val individualsDetails = session.get.listOfMatches.get.find(person => person.nino == values.nino).get
+              val excludedPerson = Some(EiLPerson(
+                individualsDetails.nino,
+                individualsDetails.firstForename,
+                individualsDetails.secondForename,
+                individualsDetails.surname,
+                individualsDetails.worksPayrollNumber,
+                individualsDetails.dateOfBirth,
+                individualsDetails.gender,
+                Some(20),
+                individualsDetails.perOptLock
+              ))
               validateRequest(year, iabdType)
-              commitExclusion(year, iabdType, controllersReferenceData.YEAR_RANGE, excludedPerson)
+              commitExclusion(
+                year,
+                uriInformation.iabdValueURLDeMapper(iabdType),
+                controllersReferenceData.YEAR_RANGE,
+                excludedPerson)
             }
           )
       }
     }
 
-  def afterSearchResultsNoForm(year: String, iabdType: String): Action[AnyContent] =
+  def updateExclusions(year: String, iabdType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       implicit val hc: HeaderCarrier =
         HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
       if (exclusionsAllowed) {
         cachingService.fetchPbikSession().flatMap { session =>
-          val excludedPerson = session.get.listOfMatches.get.headOption
-          Logger.warn(
-            s"[ExclusionListController][afterSearchResultsNoForm] Preparing to exclude person ${excludedPerson.get} for year: $year and year range: ${controllersReferenceData.YEAR_RANGE}")
+          val individualsDetails = session.get.listOfMatches.get.head
+          val excludedPerson = Some(
+            EiLPerson(
+              individualsDetails.nino,
+              individualsDetails.firstForename,
+              individualsDetails.secondForename,
+              individualsDetails.surname,
+              individualsDetails.worksPayrollNumber,
+              individualsDetails.dateOfBirth,
+              individualsDetails.gender,
+              Some(20),
+              individualsDetails.perOptLock
+            ))
           validateRequest(year, iabdType)
           commitExclusion(
             year,
@@ -405,48 +430,6 @@ class ExclusionListController @Inject()(
             controllersReferenceData.YEAR_RANGE,
             excludedPerson)
         }
-      } else {
-        Future.successful(
-          Ok(
-            errorPageView(
-              ControllersReferenceDataCodes.FEATURE_RESTRICTED,
-              taxDateUtils.getTaxYearRange(),
-              empRef = Some(request.empRef))))
-      }
-    }
-
-  def updateExclusions(year: String, iabdType: String, formType: String): Action[AnyContent] =
-    (authenticate andThen noSessionCheck).async { implicit request =>
-      implicit val hc: HeaderCarrier =
-        HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
-      val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
-      if (exclusionsAllowed) {
-        val taxYearRange = controllersReferenceData.YEAR_RANGE
-
-        val futureResult =
-          processExclusionForm(formMappings.individualsForm.bindFromRequest, year, iabdTypeValue, taxYearRange)
-        controllersReferenceData.responseErrorHandler(futureResult)
-
-      } else {
-        Future.successful(
-          Ok(
-            errorPageView(
-              ControllersReferenceDataCodes.FEATURE_RESTRICTED,
-              taxDateUtils.getTaxYearRange(),
-              empRef = Some(request.empRef))))
-      }
-    }
-
-  def updateMultipleExclusions(year: String, iabdType: String, formType: String): Action[AnyContent] =
-    (authenticate andThen noSessionCheck).async { implicit request =>
-      implicit val hc: HeaderCarrier =
-        HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
-      val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
-      if (exclusionsAllowed) {
-        val taxYearRange = controllersReferenceData.YEAR_RANGE
-        val form = formMappings.individualSelectionForm.bindFromRequest
-        val futureResult = processIndividualExclusionForm(form, year, iabdTypeValue, taxYearRange)
-        controllersReferenceData.responseErrorHandler(futureResult)
       } else {
         Future.successful(
           Ok(
@@ -472,71 +455,6 @@ class ExclusionListController @Inject()(
       controllersReferenceData.responseErrorHandler(resultFuture)
     }
 
-  def processIndividualExclusionForm(
-    form: Form[ExclusionNino],
-    isCurrentTaxYear: String,
-    iabdType: String,
-    taxYearRange: TaxYearRange)(
-    implicit hc: HeaderCarrier,
-    request: AuthenticatedRequest[AnyContent]): Future[Result] = {
-    val iabdTypeValue = uriInformation.iabdValueURLMapper(iabdType)
-    form.fold(
-      formWithErrors =>
-        for {
-          _ <- validateRequest(isCurrentTaxYear, iabdTypeValue)
-        } yield {
-          Ok(
-            searchResultsView(
-              taxYearRange,
-              isCurrentTaxYear,
-              iabdType,
-              EiLPersonList(List.empty[EiLPerson]),
-              formWithErrors,
-              ControllersReferenceDataCodes.FORM_TYPE_NONINO,
-              empRef = request.empRef
-            ))
-      },
-      values => {
-        validateRequest(isCurrentTaxYear, iabdTypeValue)
-        Logger.warn(s"[ExclusionListController][processIndividualExclusionForm] We are searching for nino: ${values.nino}")
-        cachingService.fetchPbikSession().flatMap { session =>
-          val excludedIndividual: Option[EiLPerson] =
-            session.get.listOfMatches.get.find(person => person.nino == values.nino)
-          commitExclusion(isCurrentTaxYear, iabdType, taxYearRange, excludedIndividual)
-        }
-      }
-    )
-  }
-
-  def processExclusionForm(form: Form[EiLPersonList], year: String, iabdType: String, taxYearRange: TaxYearRange)(
-    implicit hc: HeaderCarrier,
-    request: AuthenticatedRequest[AnyContent]): Future[Result] =
-    form.fold(
-      formWithErrors =>
-        Future {
-          Ok(
-            errorPageView(
-              ControllersReferenceDataCodes.INVALID_FORM_ERROR,
-              taxYearRange,
-              year,
-              empRef = Some(request.empRef)))
-      },
-      values => {
-        val excludedIndividual = extractExcludedIndividual("", values)
-        if (excludedIndividual.isEmpty) {
-          Future.successful(
-            Ok(
-              errorPageView(
-                ControllersReferenceDataCodes.INVALID_FORM_ERROR,
-                taxYearRange,
-                year,
-                empRef = Some(request.empRef))))
-        } else {
-          commitExclusion(year, iabdType, taxYearRange, excludedIndividual)
-        }
-      }
-    )
-
   def commitExclusion(
     year: String,
     iabdType: String,
@@ -546,8 +464,6 @@ class ExclusionListController @Inject()(
     request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     val yearInt = if (year.equals(utils.FormMappingsConstants.CY)) taxYearRange.cyminus1 else taxYearRange.cy
     val spYear = if (taxDateUtils.isCurrentTaxYear(yearInt)) splunkLogger.CY else splunkLogger.CYP1
-    val registrationList: RegistrationList =
-      RegistrationList(None, List(RegistrationItem(iabdType, active = false, enabled = false)))
 
     Logger.info(
       s"[ExclusionListController][commitExclusion] Committing Exclusion for scheme ${request.empRef.toString}" +
