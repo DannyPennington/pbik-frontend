@@ -321,15 +321,13 @@ class ExclusionListController @Inject()(
         Logger.info(
           s"[ExclusionListController][searchResultsHandleValidResult] Exclusion search matched ${listOfMatches.size}" +
             s" employees with Optimistic locks ${listOfMatches.map(x => x.perOptLock)}")
-        val filledListOfMatchesForm = formMappings.individualsFormWithRadio.fill(
-          (individualSelectionOption.getOrElse(""), EiLPersonList(listOfMatches)))
         Ok(
           searchResultsView(
             controllersReferenceData.YEAR_RANGE,
             isCurrentTaxYear,
             iabdTypeValue,
             EiLPersonList(listOfMatches),
-            filledListOfMatchesForm,
+            formMappings.individualSelectionForm,
             formType,
             empRef = request.empRef
           ))
@@ -366,6 +364,57 @@ class ExclusionListController @Inject()(
       }
     }
 
+  def afterSearchResultsWithForm(year: String, iabdType: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      cachingService.fetchPbikSession().flatMap { session =>
+        formMappings.individualSelectionForm
+          .bindFromRequest()
+          .fold(
+            formWithErrors =>
+              Future.successful(Ok(searchResultsView(
+                controllersReferenceData.YEAR_RANGE,
+                year,
+                iabdType,
+                EiLPersonList(session.get.listOfMatches.get),
+                formWithErrors,
+                ControllersReferenceDataCodes.FORM_TYPE_NONINO,
+                request.empRef
+              ))),
+            values => {
+              val excludedPerson = session.get.listOfMatches.get.find(person => person.nino == values.nino)
+              validateRequest(year, iabdType)
+              commitExclusion(year, iabdType, controllersReferenceData.YEAR_RANGE, excludedPerson)
+            }
+          )
+      }
+    }
+
+  def afterSearchResultsNoForm(year: String, iabdType: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      implicit val hc: HeaderCarrier =
+        HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
+      if (exclusionsAllowed) {
+        cachingService.fetchPbikSession().flatMap { session =>
+          val excludedPerson = session.get.listOfMatches.get.headOption
+          Logger.warn(
+            s"[ExclusionListController][afterSearchResultsNoForm] Preparing to exclude person ${excludedPerson.get} for year: $year and year range: ${controllersReferenceData.YEAR_RANGE}")
+          validateRequest(year, iabdType)
+          commitExclusion(
+            year,
+            uriInformation.iabdValueURLDeMapper(iabdType),
+            controllersReferenceData.YEAR_RANGE,
+            excludedPerson)
+        }
+      } else {
+        Future.successful(
+          Ok(
+            errorPageView(
+              ControllersReferenceDataCodes.FEATURE_RESTRICTED,
+              taxDateUtils.getTaxYearRange(),
+              empRef = Some(request.empRef))))
+      }
+    }
+
   def updateExclusions(year: String, iabdType: String, formType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       implicit val hc: HeaderCarrier =
@@ -395,7 +444,7 @@ class ExclusionListController @Inject()(
       val iabdTypeValue = uriInformation.iabdValueURLDeMapper(iabdType)
       if (exclusionsAllowed) {
         val taxYearRange = controllersReferenceData.YEAR_RANGE
-        val form = formMappings.individualsFormWithRadio.bindFromRequest
+        val form = formMappings.individualSelectionForm.bindFromRequest
         val futureResult = processIndividualExclusionForm(form, year, iabdTypeValue, taxYearRange)
         controllersReferenceData.responseErrorHandler(futureResult)
       } else {
@@ -424,7 +473,7 @@ class ExclusionListController @Inject()(
     }
 
   def processIndividualExclusionForm(
-    form: Form[(String, EiLPersonList)],
+    form: Form[ExclusionNino],
     isCurrentTaxYear: String,
     iabdType: String,
     taxYearRange: TaxYearRange)(
@@ -449,8 +498,12 @@ class ExclusionListController @Inject()(
       },
       values => {
         validateRequest(isCurrentTaxYear, iabdTypeValue)
-        val excludedIndividual = extractExcludedIndividual(values._1, values._2)
-        commitExclusion(isCurrentTaxYear, iabdType, taxYearRange, excludedIndividual)
+        Logger.warn(s"[ExclusionListController][processIndividualExclusionForm] We are searching for nino: ${values.nino}")
+        cachingService.fetchPbikSession().flatMap { session =>
+          val excludedIndividual: Option[EiLPerson] =
+            session.get.listOfMatches.get.find(person => person.nino == values.nino)
+          commitExclusion(isCurrentTaxYear, iabdType, taxYearRange, excludedIndividual)
+        }
       }
     )
   }
@@ -500,7 +553,7 @@ class ExclusionListController @Inject()(
       s"[ExclusionListController][commitExclusion] Committing Exclusion for scheme ${request.empRef.toString}" +
         s", with employees Optimistic Lock: ${excludedIndividual.map(eiLPerson => eiLPerson.perOptLock).getOrElse(0)}"
     )
-
+    Logger.warn(s"We are excluding: ${excludedIndividual.get}")
     tierConnector
       .genericPostCall(
         uriInformation.baseUrl,
@@ -511,6 +564,7 @@ class ExclusionListController @Inject()(
       .map { response =>
         response.status match {
           case OK => {
+            Logger.warn(s"[ExclusionListController][commitExclusion] Response body from backend: ${response.body}")
             auditExclusion(exclusion = true, yearInt, excludedIndividual.get.nino, iabdType)
             Redirect(
               routes.ExclusionListController
