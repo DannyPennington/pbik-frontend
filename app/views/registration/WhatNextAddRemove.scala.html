@@ -33,7 +33,7 @@ localFormPartialRetriever: LocalFormPartialRetriever)
   empRef: EmpRef)(implicit request:Request[_], messages: Messages)
 
 @benefitLabel = @{messages("BenefitInKind.label." + bikList.active.head.id )}
-@singleBik = @{ if(bikList.active.length > 0 ) { false } else { true } }
+@singleBik = @{ if(bikList.active.length > 1 ) { false } else { true } }
 @cyminus1 = @{""+taxYearRange.cyminus1}
 @cy = @{""+taxYearRange.cy}
 @cyplus1 = @{""+taxYearRange.cyplus1}

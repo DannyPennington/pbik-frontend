@@ -40,7 +40,7 @@ import services.{BikListService, SessionService}
 import support.TestAuthUser
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.logging.SessionId
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionKeys}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionKeys, Token}
 import uk.gov.hmrc.time.TaxYear
 import utils.{ControllersReferenceData, FormMappings, TaxDateUtils, URIInformation}
 
@@ -332,22 +332,26 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
   "When loading the what next page" must {
     "(Register a BIK current year) Single benefit - state the status is ok and correct page is displayed" in {
       when(whatNextPageController.cachingService.fetchPbikSession()(any[HeaderCarrier]))
-        .thenReturn(Future.successful(Some(PbikSession(
-          Some(RegistrationList(None, List(RegistrationItem("30", false, false)), None)),
-          Some(RegistrationItem("30", false, false)),
-          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
-          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)))
-        ))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              PbikSession(
+                Some(RegistrationList(active = List(RegistrationItem("30", true, true)))),
+                None,
+                None,
+                None,
+                None
+              ))))
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-      val year = TaxYear.taxYearFor(LocalDate.now).currentYear
+      val year = TaxYear.taxYearFor(LocalDate.now).finishYear
       implicit val timeout: Timeout = 5 seconds
-      val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "").withSession(
-        "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")))(
-        timeout)
+      val result = await(
+        whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "").withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPmyKp6NMg2ejgLRg+s6KzjxE2hi9eu4fLCDLONk8FjGjg32a1FJu+JITHQUOErtOxhHyDxxShPDoC4LAKyJGhenYBarRP4pAWWvVJ4DAU2e0zc8HYojKAOXiUbM4iuysLuyt64aas/5JzLjKR1jetI79KwIkeIPK/mMlBESjue4V"
+        )))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
       result.body.asInstanceOf[Strict].data.utf8String must include(
@@ -356,21 +360,25 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
 
     "(Register a BIK next year) Single benefit - state the status is ok and correct page is displayed" in {
       when(whatNextPageController.cachingService.fetchPbikSession()(any[HeaderCarrier]))
-        .thenReturn(Future.successful(Some(PbikSession(
-          Some(RegistrationList(None, List(RegistrationItem("30", false, false)), None)),
-          Some(RegistrationItem("30", false, false)),
-          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
-          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)))
-        ))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              PbikSession(
+                Some(RegistrationList(active = List(RegistrationItem("30", true, true)))),
+                None,
+                None,
+                None,
+                None
+              ))))
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
       implicit val timeout: Timeout = 5 seconds
-      val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "").withSession(
-        "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")))(
-        timeout)
+      val result = await(
+        whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "").withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPmyKp6NMg2ejgLRg+s6KzjxE2hi9eu4fLCDLONk8FjGjg32a1FJu+JITHQUOErtOxhHyDxxShPDoC4LAKyJGhenYBarRP4pAWWvVJ4DAU2e0zc8HYojKAOXiUbM4iuysLuyt64aas/5JzLjKR1jetI79KwIkeIPK/mMlBESjue4V"
+        )))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
       result.body.asInstanceOf[Strict].data.utf8String must include(
@@ -379,24 +387,26 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
 
     "(Register a BIK next year) Multiple benefits - state the status is ok and correct page is displayed" in {
       when(whatNextPageController.cachingService.fetchPbikSession()(any[HeaderCarrier]))
-        .thenReturn(Future.successful(Some(PbikSession(
-          Some(RegistrationList(
-            None,
-            List(RegistrationItem("30", false, false), RegistrationItem("8", false, false)),
-            None)),
-          Some(RegistrationItem("30", false, false)),
-          Some(List(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None))),
-          Some(EiLPerson("AA111111A", "John", None, "Smith", Some("123"), None, None, None)),
-          None
-        ))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              PbikSession(
+                Some(RegistrationList(
+                  active = List(RegistrationItem("30", true, true), RegistrationItem("8", true, true)))),
+                None,
+                None,
+                None,
+                None
+              ))))
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session002")))
       implicit val timeout: Timeout = 5 seconds
-      val result = await(whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "").withSession(
-        "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPgEfRhqPkHuHxWc6eswK/a7rrLa9lPLwH9xezRwMMion+ykOK8TOVCq6V9Hiy6S6i8XucExsSBidKgdowFAC1kwIU1zclecg9k9kDo/jHVMQ4HGEwq7Lj08nO+A37p9zvf4vmzZbylcpkF1kD8ut/B/9KwIkeIPK/mMlBESjue4V")))(
-        timeout)
+      val result = await(
+        whatNextPageController.showWhatNextRegisteredBik()(FakeRequest("", "").withSession(
+          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPmyKp6NMg2ejgLRg+s6KzjxE2hi9eu4fLCDLONk8FjGjg32a1FJu+JITHQUOErtOxhHyDxxShPDoC4LAKyJGhenYBarRP4pAWWvVJ4DAU2e0zc8HYojKAOXiUbM4iuysLuyt64aas/5JzLjKR1jetI79KwIkeIPK/mMlBESjue4V"
+        )))(timeout)
       result.header.status must be(OK)
       result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
       result.body.asInstanceOf[Strict].data.utf8String must include("Private medical treatment or insurance")
