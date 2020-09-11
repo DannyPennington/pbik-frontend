@@ -208,6 +208,7 @@ class ManageRegistrationController @Inject()(
         Ok(
           confirmUpdateNextTaxYearView(
             registrationList,
+            None,
             form,
             additive = true,
             controllersReferenceData.YEAR_RANGE,
@@ -224,6 +225,7 @@ class ManageRegistrationController @Inject()(
                  cachingSuffix = "remove",
                  generateViewBasedOnFormItems = confirmUpdateNextTaxYearView(
                    session.get.registrations.get,
+                   session.get.bikRemoved,
                    _,
                    additive = false,
                    controllersReferenceData.YEAR_RANGE,
@@ -248,18 +250,20 @@ class ManageRegistrationController @Inject()(
 
   def confirmRemoveNextTaxYearNoForm(iabdType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
+      val bikToRemove = RegistrationItem(iabdType, active = true, enabled = true)
       val registrationList =
-        RegistrationList(None, List(RegistrationItem(iabdType, active = true, enabled = false)), reason = None)
+        RegistrationList(None, List(bikToRemove), reason = None)
       val form: Form[RegistrationList] = formMappings.objSelectedForm.fill(registrationList)
-      cachingService.cacheBikRemoved(RegistrationItem(uriInformation.iabdValueURLDeMapper(iabdType), false, false))
+      cachingService.cacheBikRemoved(RegistrationItem(uriInformation.iabdValueURLDeMapper(iabdType), false, true))
       val resultFuture = Future.successful(
-        Ok(
-          confirmUpdateNextTaxYearView(
-            registrationList,
-            formMappings.objSelectedForm.fill(form.get),
-            additive = false,
-            controllersReferenceData.YEAR_RANGE,
-            empRef = request.empRef)))
+        Ok(confirmUpdateNextTaxYearView(
+          registrationList,
+          Some(bikToRemove),
+          formMappings.objSelectedForm.fill(form.get),
+          additive = false,
+          controllersReferenceData.YEAR_RANGE,
+          empRef = request.empRef
+        )))
       controllersReferenceData.responseErrorHandler(resultFuture)
     }
 

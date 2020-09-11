@@ -33,6 +33,7 @@ uriInformation: URIInformation,
 back_link: BackLink)
 
 @(bikList: RegistrationList,
+  removalBik: Option[RegistrationItem],
   bikForm: Form[RegistrationList],
   additive: Boolean,
   taxYearRange:TaxYearRange, empRef: EmpRef)(implicit request:Request[_], flash: Flash, messages: Messages)

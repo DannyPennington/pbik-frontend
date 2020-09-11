@@ -35,7 +35,7 @@ class WhatNextAddRemoveViewSpec extends PBIKViewSpec {
   def taxYearRange = TaxYearRange(2018, 2019, 2020)
 
   override def view: Html = {
-    val regList = RegistrationList(active = List.empty[RegistrationItem])
+    val regList = RegistrationList(active = List(RegistrationItem("30", true, true)))
     whatNextAddRemoveView(isCurrentYear = true, taxYearRange, additive = true, regList, EmpRef("", ""))
   }
 

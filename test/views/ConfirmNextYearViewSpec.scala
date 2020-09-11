@@ -44,9 +44,10 @@ class ConfirmNextYearViewSpec extends PBIKViewSpec {
   implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
   implicit val localFormPartialRetriever: LocalFormPartialRetriever = app.injector.instanceOf[LocalFormPartialRetriever]
   val bikList = RegistrationList(active = List.empty[RegistrationItem])
+  val removalBik = Some(RegistrationItem("30", true, true))
 
   def viewWithForm(form: Form[RegistrationList]): Html =
-    confirmUpdateNextTaxYearView(bikList, form, additive = true, taxYearRange, EmpRef("", ""))
+    confirmUpdateNextTaxYearView(bikList, removalBik, form, additive = true, taxYearRange, EmpRef("", ""))
 
   "nextYearPage" must {
     behave like pageWithTitle(messages("AddBenefits.Confirm.Single.Title"))
