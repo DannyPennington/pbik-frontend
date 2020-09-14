@@ -364,6 +364,20 @@ class ExclusionListController @Inject()(
       }
     }
 
+  def createExcludedPerson(individualsDetails: EiLPerson): Option[EiLPerson] =
+    Some(
+      EiLPerson(
+        individualsDetails.nino,
+        individualsDetails.firstForename,
+        individualsDetails.secondForename,
+        individualsDetails.surname,
+        individualsDetails.worksPayrollNumber,
+        individualsDetails.dateOfBirth,
+        individualsDetails.gender,
+        Some(20), //Setting to exclusion status
+        individualsDetails.perOptLock
+      ))
+
   def updateMultipleExclusions(year: String, iabdType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
       cachingService.fetchPbikSession().flatMap { session =>
@@ -382,17 +396,7 @@ class ExclusionListController @Inject()(
               ))),
             values => {
               val individualsDetails = session.get.listOfMatches.get.find(person => person.nino == values.nino).get
-              val excludedPerson = Some(EiLPerson(
-                individualsDetails.nino,
-                individualsDetails.firstForename,
-                individualsDetails.secondForename,
-                individualsDetails.surname,
-                individualsDetails.worksPayrollNumber,
-                individualsDetails.dateOfBirth,
-                individualsDetails.gender,
-                Some(20),
-                individualsDetails.perOptLock
-              ))
+              val excludedPerson = createExcludedPerson(individualsDetails)
               validateRequest(year, iabdType)
               commitExclusion(
                 year,
@@ -411,18 +415,7 @@ class ExclusionListController @Inject()(
       if (exclusionsAllowed) {
         cachingService.fetchPbikSession().flatMap { session =>
           val individualsDetails = session.get.listOfMatches.get.head
-          val excludedPerson = Some(
-            EiLPerson(
-              individualsDetails.nino,
-              individualsDetails.firstForename,
-              individualsDetails.secondForename,
-              individualsDetails.surname,
-              individualsDetails.worksPayrollNumber,
-              individualsDetails.dateOfBirth,
-              individualsDetails.gender,
-              Some(20),
-              individualsDetails.perOptLock
-            ))
+          val excludedPerson = createExcludedPerson(individualsDetails)
           validateRequest(year, iabdType)
           commitExclusion(
             year,
@@ -469,7 +462,6 @@ class ExclusionListController @Inject()(
       s"[ExclusionListController][commitExclusion] Committing Exclusion for scheme ${request.empRef.toString}" +
         s", with employees Optimistic Lock: ${excludedIndividual.map(eiLPerson => eiLPerson.perOptLock).getOrElse(0)}"
     )
-    Logger.warn(s"We are excluding: ${excludedIndividual.get}")
     tierConnector
       .genericPostCall(
         uriInformation.baseUrl,
@@ -480,7 +472,6 @@ class ExclusionListController @Inject()(
       .map { response =>
         response.status match {
           case OK => {
-            Logger.warn(s"[ExclusionListController][commitExclusion] Response body from backend: ${response.body}")
             auditExclusion(exclusion = true, yearInt, excludedIndividual.get.nino, iabdType)
             Redirect(
               routes.ExclusionListController

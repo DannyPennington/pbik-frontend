@@ -71,8 +71,10 @@ class LanguageSupportSpec extends PlaySpec with TestAuthUser with FakePBIKApplic
 
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId(sessionId)))
       implicit val timeout: FiniteDuration = timeoutValue
-      val result = await(mockController.setLanguage(request))(timeout)
-      result.header.status must be(SEE_OTHER) // 303
+      val result = mockController.setLanguage(request)
+      (scala.concurrent.ExecutionContext.Implicits.global)
+      status(result) must be(SEE_OTHER)
+      redirectLocation(result).get must be("/payrollbik/payrolled-benefits-expenses")
     }
   }
 
@@ -88,9 +90,10 @@ class LanguageSupportSpec extends PlaySpec with TestAuthUser with FakePBIKApplic
 
       implicit val timeout: FiniteDuration = timeoutValue
       implicit val lang: Lang = Lang("cy")
-      val result = await(homePageController.onPageLoad(request))(timeout)
-      result.header.status must be(OK) // 200
-      result.body.asInstanceOf[Strict].data.utf8String must include("Cyfeirnod TWE y cyflogwr")
+      val result = homePageController.onPageLoad(request)
+
+      status(result) must be(OK) // 200
+      contentAsString(result) must include("Cyfeirnod TWE y cyflogwr")
     }
   }
 

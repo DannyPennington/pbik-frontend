@@ -54,8 +54,8 @@ GET         /:year/:iabdType/:formType/exclude-employee-form     controllers.Exc
 POST        /:year/:iabdType/:formType/exclude-employee-form     controllers.ExclusionListController.searchResults(year: String, iabdType: String, formType: String)
 GET         /:year/:iabdType/:formType/exclude-employee-results  controllers.ExclusionListController.showResults(year: String, iabdType: String, formType: String)
 
-GET        /:year/:iabdType/exclude-employee-results-single     controllers.ExclusionListController.updateExclusions(year: String, iabdType: String)
-POST       /:year/:iabdType/exclude-employee-results-multiple        controllers.ExclusionListController.updateMultipleExclusions(year: String, iabdType: String)
+GET        /:year/:iabdType/exclude-employee-results-single      controllers.ExclusionListController.updateExclusions(year: String, iabdType: String)
+POST       /:year/:iabdType/exclude-employee-results-multiple    controllers.ExclusionListController.updateMultipleExclusions(year: String, iabdType: String)
 
 GET         /:year/:iabdType/exclude-confirmation                 controllers.ExclusionListController.showExclusionConfirmation(year: String, iabdType: String)
 
