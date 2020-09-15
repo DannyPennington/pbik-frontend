@@ -19,6 +19,7 @@ package controllers
 import akka.util.Timeout
 import config._
 import connectors.HmrcTierConnector
+import controllers.actions.{AuthAction, NoSessionCheckAction}
 import javax.inject.Inject
 import models._
 import org.joda.time.LocalDate
@@ -42,7 +43,7 @@ import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionKeys, Token}
 import uk.gov.hmrc.time.TaxYear
-import utils.{ControllersReferenceData, FormMappings, TaxDateUtils, URIInformation}
+import utils.{ControllersReferenceData, FormMappings, TaxDateUtils, TestAuthAction, TestNoSessionCheckAction, URIInformation}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits._
@@ -55,6 +56,8 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
   override lazy val fakeApplication: Application = GuiceApplicationBuilder(
     disabled = Seq(classOf[com.kenshoo.play.metrics.PlayModule])
   ).configure(config)
+    .overrides(bind[AuthAction].to(classOf[TestAuthAction]))
+    .overrides(bind[NoSessionCheckAction].to(classOf[TestNoSessionCheckAction]))
     .overrides(bind[BikListService].toInstance(mock(classOf[StubBikListService])))
     .overrides(bind[HmrcTierConnector].toInstance(mock(classOf[HmrcTierConnector])))
     .overrides(bind[SessionService].toInstance(mock(classOf[SessionService])))
@@ -249,7 +252,7 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
   }
 
   val whatNextPageController: WhatNextPageController = {
-    val w = injected[WhatNextPageController]
+    val w = app.injector.instanceOf[WhatNextPageController]
 
     val dateRange: TaxYearRange = taxDateUtils.getTaxYearRange()
 
@@ -345,15 +348,11 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
     implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
       AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
     implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-    implicit val timeout: Timeout = 5 seconds
-    val result = await(
-      whatNextPageController.showWhatNextRegisteredBik()(
-        FakeRequest("", "").withSession(
-          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPmyKp6NMg2ejgLRg+s6KzjxE2hi9eu4fLCDLONk8FjGjg32a1FJu+JITHQUOErtOxhHyDxxShPDoC4LAKyJGhenYBarRP4pAWWvVJ4DAU2e0zc8HYojKAOXiUbM4iuysLuyt64aas/5JzLjKR1jetI79KwIkeIPK/mMlBESjue4V"
-        )))(timeout)
-    result.header.status must be(OK)
-    result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
-    result.body.asInstanceOf[Strict].data.utf8String must include(
+    val result = whatNextPageController.showWhatNextRegisteredBik().apply(authenticatedRequest)
+    (scala.concurrent.ExecutionContext.Implicits.global)
+    status(result) must be(OK)
+    contentAsString(result) must include("Registration complete")
+    contentAsString(result) must include(
       "Now tax Private medical treatment or insurance through your payroll from 6 April")
   }
 
@@ -374,16 +373,12 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
     implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
       AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
     implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session002")))
-    implicit val timeout: Timeout = 5 seconds
-    val result = await(
-      whatNextPageController.showWhatNextRegisteredBik()(
-        FakeRequest("", "").withSession(
-          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPmyKp6NMg2ejgLRg+s6KzjxE2hi9eu4fLCDLONk8FjGjg32a1FJu+JITHQUOErtOxhHyDxxShPDoC4LAKyJGhenYBarRP4pAWWvVJ4DAU2e0zc8HYojKAOXiUbM4iuysLuyt64aas/5JzLjKR1jetI79KwIkeIPK/mMlBESjue4V"
-        )))(timeout)
-    result.header.status must be(OK)
-    result.body.asInstanceOf[Strict].data.utf8String must include("Registration complete")
-    result.body.asInstanceOf[Strict].data.utf8String must include("Private medical treatment or insurance")
-    result.body.asInstanceOf[Strict].data.utf8String must include("Services supplied")
+    val result = whatNextPageController.showWhatNextRegisteredBik().apply(authenticatedRequest)
+    (scala.concurrent.ExecutionContext.Implicits.global)
+    status(result) must be(OK)
+    contentAsString(result) must include("Registration complete")
+    contentAsString(result) must include("Private medical treatment or insurance")
+    contentAsString(result) must include("Services supplied")
   }
 
   "(Remove a BIK)- state the status is ok and correct page is displayed" in {
@@ -403,14 +398,11 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
       AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
     val whatNextRemoveMsg: String = Messages("whatNext.remove.p1")
     implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-    implicit val timeout: Timeout = 5 seconds
-    val result = await(
-      whatNextPageController.showWhatNextRemovedBik()(
-        FakeRequest("", "").withSession(
-          "authToken" -> "Bearer BXQ3/Treo4kQCZvVcCqKPmyKp6NMg2ejgLRg+s6KzjxE2hi9eu4fLCDLONk8FjGjg32a1FJu+JITHQUOErtOxhHyDxxShPDoC4LAKyJGhenYBarRP4pAWWvVJ4DAU2e0zc8HYojKAOXiUbM4iuysLuyt64aas/5JzLjKR1jetI79KwIkeIPK/mMlBESjue4V"
-        )))(timeout)
-    result.body.asInstanceOf[Strict].data.utf8String must include("Benefit removed")
-    result.body.asInstanceOf[Strict].data.utf8String must include(whatNextRemoveMsg)
+    val result = whatNextPageController.showWhatNextRemovedBik().apply(authenticatedRequest)
+    (scala.concurrent.ExecutionContext.Implicits.global)
+    status(result) must be(OK)
+    contentAsString(result) must include("Benefit removed")
+    contentAsString(result) must include(whatNextRemoveMsg)
   }
 
 }

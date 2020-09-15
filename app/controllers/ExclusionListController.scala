@@ -380,31 +380,40 @@ class ExclusionListController @Inject()(
 
   def updateMultipleExclusions(year: String, iabdType: String): Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
-      cachingService.fetchPbikSession().flatMap { session =>
-        formMappings.individualSelectionForm
-          .bindFromRequest()
-          .fold(
-            formWithErrors =>
-              Future.successful(Ok(searchResultsView(
-                controllersReferenceData.YEAR_RANGE,
-                year,
-                iabdType,
-                EiLPersonList(session.get.listOfMatches.get),
-                formWithErrors,
-                ControllersReferenceDataCodes.FORM_TYPE_NONINO,
-                request.empRef
-              ))),
-            values => {
-              val individualsDetails = session.get.listOfMatches.get.find(person => person.nino == values.nino).get
-              val excludedPerson = createExcludedPerson(individualsDetails)
-              validateRequest(year, iabdType)
-              commitExclusion(
-                year,
-                uriInformation.iabdValueURLDeMapper(iabdType),
-                controllersReferenceData.YEAR_RANGE,
-                excludedPerson)
-            }
-          )
+      if (exclusionsAllowed) {
+        cachingService.fetchPbikSession().flatMap { session =>
+          formMappings.individualSelectionForm
+            .bindFromRequest()
+            .fold(
+              formWithErrors =>
+                Future.successful(Ok(searchResultsView(
+                  controllersReferenceData.YEAR_RANGE,
+                  year,
+                  iabdType,
+                  EiLPersonList(session.get.listOfMatches.get),
+                  formWithErrors,
+                  ControllersReferenceDataCodes.FORM_TYPE_NONINO,
+                  request.empRef
+                ))),
+              values => {
+                val individualsDetails = session.get.listOfMatches.get.find(person => person.nino == values.nino).get
+                val excludedPerson = createExcludedPerson(individualsDetails)
+                validateRequest(year, iabdType)
+                commitExclusion(
+                  year,
+                  uriInformation.iabdValueURLDeMapper(iabdType),
+                  controllersReferenceData.YEAR_RANGE,
+                  excludedPerson)
+              }
+            )
+        }
+      } else {
+        Future.successful(
+          Ok(
+            errorPageView(
+              ControllersReferenceDataCodes.FEATURE_RESTRICTED,
+              taxDateUtils.getTaxYearRange(),
+              empRef = Some(request.empRef))))
       }
     }
 

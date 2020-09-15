@@ -846,27 +846,17 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
   }
 
   "When updating individual exclusions, an authorised user" must {
-    "see the page in order to review their result" in {
-      val TEST_YEAR_CODE = "cy"
-      val TEST_IABD_VALUE = "31"
-      val FROM_OVERVIEW = "false"
+    "see the page what's next page in order to review their result" in {
+      val TEST_YEAR_CODE = "cyp1"
+      val TEST_IABD_VALUE = "car"
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
         AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
-      val title = Messages("whatNext.exclude.heading")
-      val excludedText = Messages("whatNext.exclude.p1", "Exclusion complete")
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-      implicit val timeout: Timeout = 5 seconds
-      val result = await(
-        mockExclusionListController
-          .updateMultipleExclusions(
-            TEST_YEAR_CODE,
-            TEST_IABD_VALUE
-          )
-          .apply(mockrequest))(timeout)
-      result.header.status must be(OK)
-      result.body.asInstanceOf[Strict].data.utf8String must include(title)
-      result.body.asInstanceOf[Strict].data.utf8String must include(excludedText)
+      val result = mockExclusionListController.updateExclusions(TEST_YEAR_CODE, TEST_IABD_VALUE).apply(mockrequest)
+      (scala.concurrent.ExecutionContext.Implicits.global)
+      status(result) must be(SEE_OTHER)
+      redirectLocation(result).get must be(s"/payrollbik/$TEST_YEAR_CODE/$TEST_IABD_VALUE/exclude-confirmation")
     }
   }
 
