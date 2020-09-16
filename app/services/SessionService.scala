@@ -45,11 +45,17 @@ class SessionService @Inject()(
     PbikSession(cleanRegistrationList, cleanBikRemoved, cleanListOfMatches, cleanEiLPerson, cleanListOfMatches)
 
   def fetchPbikSession()(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
-    sessionCache.fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY).recover {
-      case ex: Exception =>
-        Logger.error(s"[SessionService][fetchPbikSession] Fetch failed due to: $ex")
-        None
-    }
+    sessionCache
+      .fetchAndGetEntry[PbikSession](PBIK_SESSION_KEY)
+      .map {
+        case Some(session) => Some(session)
+        case None          => Some(cleanSession)
+      }
+      .recover {
+        case ex: Exception =>
+          Logger.error(s"[SessionService][fetchPbikSession] Fetch failed due to: $ex")
+          Some(cleanSession)
+      }
 
   def cacheRegistrationList(value: RegistrationList)(implicit hc: HeaderCarrier): Future[Option[PbikSession]] =
     cache(CacheKeys.RegistrationList, Some(value))

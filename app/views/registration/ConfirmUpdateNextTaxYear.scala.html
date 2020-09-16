@@ -39,7 +39,7 @@ back_link: BackLink)
   taxYearRange:TaxYearRange, empRef: EmpRef)(implicit request:Request[_], flash: Flash, messages: Messages)
 
 @benefitLabel = @{ messages("BenefitInKind.label." + uriInformation.iabdValueURLDeMapper(bikForm("actives[0].uid").value.get )) }
-@singleBik = @{ if(bikList.active.length > 0 ) { false } else { true } }
+@singleBik = @{ if(bikList.active.length > 1 ) { false } else { true } }
 @gaEventBiks = @{ for (item <- 0 until bikList.active.length) { Html(messages("BenefitInKind.label." + bikList.active(item)) + " ,") } }
 @gaEventRemoveBiks = @{ if(!additive) { helper.repeat(bikForm("actives"), min=0) { activeField => Html(messages("BenefitInKind.label." + uriInformation.iabdValueURLDeMapper(activeField("uid").value.get)) + " ,") } } }
 
