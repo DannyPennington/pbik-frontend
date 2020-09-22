@@ -25,6 +25,7 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc.Request
+import uk.gov.hmrc.auth.core.Nino
 import utils.FormMappingsConstants._
 
 import scala.util.Try
@@ -281,6 +282,12 @@ class FormMappings @Inject()(val messagesApi: MessagesApi) extends PayrollBikDef
         )(EiLPerson.apply)(EiLPerson.unapply))
     )((individualSelection, individuals) => ((individualSelection, EiLPersonList(individuals))))(
       (individualsTuple: (String, EiLPersonList)) => Some((individualsTuple._1, individualsTuple._2.active)))
+  )
+
+  val individualSelectionForm: Form[ExclusionNino] = Form(
+    mapping(
+      "individualNino" -> nonEmptyText
+    )(ExclusionNino.apply)(ExclusionNino.unapply)
   )
 
 }

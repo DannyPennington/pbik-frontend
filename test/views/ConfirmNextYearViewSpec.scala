@@ -18,7 +18,7 @@ package views
 
 import config.{AppConfig, LocalFormPartialRetriever}
 import controllers.ExternalUrls
-import models.{EmpRef, RegistrationList, TaxYearRange}
+import models.{EmpRef, RegistrationItem, RegistrationList, TaxYearRange}
 import play.api.data.Form
 import play.api.i18n.MessagesApi
 import play.api.mvc.Flash
@@ -43,14 +43,16 @@ class ConfirmNextYearViewSpec extends PBIKViewSpec {
   implicit val externalURLs: ExternalUrls = app.injector.instanceOf[ExternalUrls]
   implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
   implicit val localFormPartialRetriever: LocalFormPartialRetriever = app.injector.instanceOf[LocalFormPartialRetriever]
+  val bikList = RegistrationList(active = List.empty[RegistrationItem])
+  val removalBik = Some(RegistrationItem("30", true, true))
 
   def viewWithForm(form: Form[RegistrationList]): Html =
-    confirmUpdateNextTaxYearView(form, additive = true, taxYearRange, EmpRef("", ""))
+    confirmUpdateNextTaxYearView(bikList, removalBik, form, additive = true, taxYearRange, EmpRef("", ""))
 
   "nextYearPage" must {
     behave like pageWithTitle(messages("AddBenefits.Confirm.Single.Title"))
     behave like pageWithHeader(messages("AddBenefits.Confirm.Single.Title"))
-    behave like pageWithContinueButtonForm("/payrollbik/cy1/add-benefit-expense-confirmed", "Register this benefit")
+    behave like pageWithContinueButtonForm("/payrollbik/cy1/add-benefit-expense", "Register this benefit")
 
   }
 

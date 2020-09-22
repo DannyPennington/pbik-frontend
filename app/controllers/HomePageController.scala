@@ -23,7 +23,7 @@ import models._
 import play.api.Logger
 import play.api.i18n.{I18nSupport, Lang, MessagesApi}
 import play.api.mvc.{Result, _}
-import services.BikListService
+import services.{BikListService, SessionService}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -38,6 +38,7 @@ class HomePageController @Inject()(
   override val messagesApi: MessagesApi,
   cc: MessagesControllerComponents,
   bikListService: BikListService,
+  cachingService: SessionService,
   authenticate: AuthAction,
   val noSessionCheck: NoSessionCheckAction,
   unauthorisedAction: UnauthorisedAction,
@@ -67,7 +68,12 @@ class HomePageController @Inject()(
     val lang = request.getQueryString("lang").getOrElse("en")
     Logger.info(s"[HomePageController][setLanguage] Request received: set language to $lang")
     val newLang = Lang(lang)
-    Redirect(routes.HomePageController.onPageLoad()).withLang(newLang)(messagesApi)
+    Redirect(
+      request.headers.toMap
+        .getOrElse("Referer", List("https://www.tax.service.gov.uk/payrollbik/payrolled-benefits-expenses"))
+        .asInstanceOf[List[String]]
+        .head)
+      .withLang(newLang)(messagesApi)
   }
 
   def loadCautionPageForCY: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
@@ -77,6 +83,7 @@ class HomePageController @Inject()(
   }
 
   def onPageLoad: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
+    cachingService.resetAll()
     val taxYearRange = taxDateUtils.getTaxYearRange()
     val pageLoadFuture = for {
       // Get the available count of biks available for each tax year
@@ -95,6 +102,7 @@ class HomePageController @Inject()(
         isFromYTA
       }
       auditHomePageView()
+      Logger.warn(s"Request body here: ${request.session.data}")
       Ok(
         overviewView(
           pbikAppConfig.cyEnabled,

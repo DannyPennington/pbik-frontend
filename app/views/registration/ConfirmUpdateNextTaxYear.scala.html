@@ -32,13 +32,15 @@ localFormPartialRetriever: LocalFormPartialRetriever,
 uriInformation: URIInformation,
 back_link: BackLink)
 
-@(bikForm:Form[RegistrationList],
+@(bikList: RegistrationList,
+  removalBik: Option[RegistrationItem],
+  bikForm: Form[RegistrationList],
   additive: Boolean,
   taxYearRange:TaxYearRange, empRef: EmpRef)(implicit request:Request[_], flash: Flash, messages: Messages)
 
 @benefitLabel = @{ messages("BenefitInKind.label." + uriInformation.iabdValueURLDeMapper(bikForm("actives[0].uid").value.get )) }
-@singleBik = @{ if(bikForm("actives").indexes.size > 1 ) { false } else { true } }
-@gaEventBiks = @{ helper.repeat(bikForm("actives"), min=0) { activeField => Html(messages("BenefitInKind.label." + activeField("uid").value.get) + " ,") } }
+@singleBik = @{ if(bikList.active.length > 1 ) { false } else { true } }
+@gaEventBiks = @{ for (item <- 0 until bikList.active.length) { Html(messages("BenefitInKind.label." + bikList.active(item)) + " ,") } }
 @gaEventRemoveBiks = @{ if(!additive) { helper.repeat(bikForm("actives"), min=0) { activeField => Html(messages("BenefitInKind.label." + uriInformation.iabdValueURLDeMapper(activeField("uid").value.get)) + " ,") } } }
 
 @screenReaderExclusionOpen = @{ messages("AddBenefits.Confirm.help.reveal.link.sr.open") }
@@ -95,49 +97,37 @@ back_link: BackLink)
 
     <div class="data">
         @if(additive) {
-            @helpers.form(action = controllers.registration.routes.ManageRegistrationController.addNextYearRegisteredBenefitTypes(),
-            'onsubmit -> "gaEventConfirmAddBenefits()") {
-                <h2>
-                    @if(!singleBik) {
-                        @messages("AddBenefits.Confirm.Multiple.Table.Heading")
-                    }else {
-                        @messages("AddBenefits.Confirm.Single.Table.Heading")
-                    }
-                </h2>
-                @helpers.form(action = controllers.registration.routes.ManageRegistrationController.updateRegisteredBenefitTypes()) {
-                    <ol class="govuk-check-your-answers cya-questions-short">
-                        @helper.repeat(bikForm("actives"), min=0) { activeField =>
-                        <li>
-                            <div class="cya-answer" id='confirmation-row-confirmation-@activeField("uid").value.get'>
-                                @messages("BenefitInKind.label." + activeField("uid").value.get )</div>
-                            <div class="hidden">
-                                @helper.inputText(activeField("uid"), '_label -> "", 'style -> "display: none" )
-                                @helper.inputText(activeField("pbik_seq"), '_label -> "", 'style -> "display: none" )
-                                @helper.inputText(activeField("active"), '_label -> "", 'style -> "display: none" )
-                            </div>
-                        </li>
-                        }
-                    </ol>
-
-                    <div class="panel panel-border-wide" id="exclude-info">
-                        @if(singleBik){
-                            @messages("AddBenefits.Confirm.help.desc.Single")
-                        }else{
-                            @messages("AddBenefits.Confirm.help.desc")
-                        }
-                    </div>
-
-                    @if(singleBik) {
-                        <input type="submit" role="button" class="button" id="button-confirm" value="@messages("Service.register.single")">
-                    }else {
-                        <input type="submit" role="button" class="button" id="button-confirm" value="@messages("Service.register.multiple")">
-                    }
-                }
+        @helpers.form(action = controllers.registration.routes.ManageRegistrationController.addNextYearRegisteredBenefitTypes(),
+        'onsubmit -> "gaEventConfirmAddBenefits()") {
+        <ol class="govuk-check-your-answers cya-questions-short">
+            @for(item <- 0 until bikList.active.length) {
+            <li>
+                <div class="cya-answer" id='confirmation-row-confirmation-@bikList.active(item).id.toString'>
+                    @messages("BenefitInKind.label." + bikList.active(item).id.toString)
+                </div>
+            </li>
             }
+        </ol>
 
-            <p>
-                <a class="button-link" id="link-back" onclick="gaEventLinkOverview()" href='@routes.HomePageController.onPageLoad'>@messages("Service.back.cancel")</a
-            </p>
+        <div class="panel panel-border-wide" id="exclude-info">
+            @if(singleBik){
+                @messages("AddBenefits.Confirm.help.desc.Single")
+                }else{
+                @messages("AddBenefits.Confirm.help.desc")
+                }
+        </div>
+
+        @if(singleBik) {
+            <input type="submit" role="button" class="button" id="button-confirm" value="@messages("Service.register.single")">
+            } else {
+            <input type="submit" role="button" class="button" id="button-confirm" value="@messages("Service.register.multiple")">
+            }
+        }
+
+        <p>
+            <a class="button-link" id="link-back" onclick="gaEventLinkOverview()" href='@routes.HomePageController.onPageLoad'>@messages("Service.back.cancel")</a
+        </p>
+
         } else {
 
             @helpers.form(action = controllers.registration.routes.ManageRegistrationController.removeNextYearRegisteredBenefitTypes(),
