@@ -16,31 +16,23 @@
 
 package controllers
 
-import java.util.UUID
-
 import connectors.HmrcTierConnector
 import javax.inject.Inject
 import models._
-import play.api.data.Form
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
-import services.{BikListService, SessionService}
-import uk.gov.hmrc.http.SessionKeys
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import services.SessionService
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import utils.{ControllersReferenceData, _}
 import views.html.registration.WhatNextAddRemove
 import controllers.actions.{AuthAction, NoSessionCheckAction}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class WhatNextPageController @Inject()(
   override val messagesApi: MessagesApi,
   val cachingService: SessionService,
-  bikListService: BikListService,
-  formMappings: FormMappings,
   authenticate: AuthAction,
-  noSessionCheck: NoSessionCheckAction,
   val tierConnector: HmrcTierConnector,
   taxDateUtils: TaxDateUtils,
   controllersReferenceData: ControllersReferenceData,

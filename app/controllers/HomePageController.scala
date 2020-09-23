@@ -102,7 +102,6 @@ class HomePageController @Inject()(
         isFromYTA
       }
       auditHomePageView()
-      Logger.warn(s"Request body here: ${request.session.data}")
       Ok(
         overviewView(
           pbikAppConfig.cyEnabled,
@@ -143,4 +142,5 @@ class HomePageController @Inject()(
         name = Option(request.name),
         empRef = Some(request.empRef)
       ))
+
 }
