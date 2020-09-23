@@ -348,7 +348,7 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
     implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
       AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
     implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-    val result = whatNextPageController.showWhatNextRegisteredBik().apply(authenticatedRequest)
+    val result = whatNextPageController.showWhatNextRegisteredBik("cy1").apply(authenticatedRequest)
     (scala.concurrent.ExecutionContext.Implicits.global)
     status(result) must be(OK)
     contentAsString(result) must include("Registration complete")
@@ -373,7 +373,7 @@ class WhatNextPageControllerSpec extends PlaySpec with FakePBIKApplication with 
     implicit val authenticatedRequest: AuthenticatedRequest[AnyContent] =
       AuthenticatedRequest(EmpRef("taxOfficeNumber", "taxOfficeReference"), UserName(Name(None, None)), request)
     implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session002")))
-    val result = whatNextPageController.showWhatNextRegisteredBik().apply(authenticatedRequest)
+    val result = whatNextPageController.showWhatNextRegisteredBik("cy1").apply(authenticatedRequest)
     (scala.concurrent.ExecutionContext.Implicits.global)
     status(result) must be(OK)
     contentAsString(result) must include("Registration complete")

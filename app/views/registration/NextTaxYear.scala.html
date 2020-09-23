@@ -71,7 +71,7 @@ repeatWithIndex: RepeatWithIndex)
 
         <h1 id="title" class="heading-xlarge">@messages("AddBenefits.Heading", ""+taxYearRange.cy, ""+taxYearRange.cyplus1)</h1>
 
-        @helpers.form(action = controllers.registration.routes.ManageRegistrationController.confirmAddNextTaxYear()) {
+        @helpers.form(action = controllers.registration.routes.ManageRegistrationController.checkYourAnswersAddNextTaxYear()) {
 
             @if(registeredBiks.size == biksAvailableCount.get) {
                 <div class="panel">

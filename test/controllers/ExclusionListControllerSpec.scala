@@ -383,7 +383,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       val mockExclusionController = app.injector.instanceOf[MockExclusionsDisallowedController]
       implicit val timeout: Timeout = 5 seconds
       val result = await(mockExclusionController.withOrWithoutNinoDecision("cy1", "car").apply(mockrequest))(timeout)
-      result.header.status must be(FORBIDDEN)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -619,7 +619,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
         mockExclusionController
           .searchResults("cy", "car", ControllersReferenceDataCodes.FORM_TYPE_NONINO)
           .apply(mockrequest))(timeout)
-      result.header.status must be(OK)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -736,7 +736,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       val mockExclusionController = app.injector.instanceOf[MockExclusionsDisallowedController]
       implicit val timeout: Timeout = 5 seconds
       val result = await(mockExclusionController.removeExclusionsCommit(TEST_IABD).apply(formrequest))(timeout)
-      result.header.status must be(OK)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -776,7 +776,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       val mockExclusionController = app.injector.instanceOf[MockExclusionsDisallowedController]
       implicit val timeout: Timeout = 5 seconds
       val result = await(mockExclusionController.remove(TEST_YEAR_CODE, TEST_IABD, TEST_NINO)(formrequest))(timeout)
-      result.header.status must be(OK)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -807,7 +807,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       implicit val timeout: Timeout = 5 seconds
       val result =
         await(mockExclusionController.updateExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
-      result.header.status must be(OK)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }
@@ -840,7 +840,7 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
       implicit val timeout: Timeout = 5 seconds
       val result =
         await(mockExclusionController.updateMultipleExclusions(TEST_YEAR_CODE, TEST_IABD)(formrequest))(timeout)
-      result.header.status must be(OK)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(title)
     }
   }

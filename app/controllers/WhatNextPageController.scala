@@ -50,15 +50,21 @@ class WhatNextPageController @Inject()(
     }
   }
 
-  def showWhatNextRegisteredBik: Action[AnyContent] =
+  def showWhatNextRegisteredBik(year: String): Action[AnyContent] =
     (authenticate).async { implicit request =>
+      val yearInt = year match {
+        case "cy1" => controllersReferenceData.YEAR_RANGE.cy
+        case "cy"  => controllersReferenceData.YEAR_RANGE.cyminus1
+      }
       val resultFuture = cachingService.fetchPbikSession().map { session =>
+        val addedBiksAsList: RegistrationList =
+          RegistrationList(active = session.get.registrations.get.active.filter(item => item.active))
         Ok(
           whatNextAddRemoveView(
-            taxDateUtils.isCurrentTaxYear(controllersReferenceData.YEAR_RANGE.cy),
+            taxDateUtils.isCurrentTaxYear(yearInt),
             controllersReferenceData.YEAR_RANGE,
             additive = true,
-            RegistrationList(active = session.get.registrations.get.active.filter(item => item.active)),
+            addedBiksAsList,
             empRef = request.empRef
           ))
       }
@@ -68,7 +74,8 @@ class WhatNextPageController @Inject()(
   def showWhatNextRemovedBik: Action[AnyContent] =
     (authenticate).async { implicit request =>
       val resultFuture = cachingService.fetchPbikSession().map { session =>
-        val removedBikAsList: RegistrationList = RegistrationList(active = List(session.get.bikRemoved.get))
+        val removedBikAsList: RegistrationList =
+          RegistrationList(active = List(session.get.bikRemoved.get))
         Ok(
           whatNextAddRemoveView(
             taxDateUtils.isCurrentTaxYear(controllersReferenceData.YEAR_RANGE.cyplus1),

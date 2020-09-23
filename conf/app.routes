@@ -21,21 +21,19 @@ GET         /payrolled-benefits-expenses                          controllers.Ho
 
 ## Add registrations
 GET         /cy1/choose-benefit-expense                           controllers.registration.ManageRegistrationController.nextTaxYearAddOnPageLoad
-POST        /cy1/choose-benefit-expense                           controllers.registration.ManageRegistrationController.confirmAddNextTaxYear
+POST        /cy1/choose-benefit-expense                           controllers.registration.ManageRegistrationController.checkYourAnswersAddNextTaxYear
 
-GET         /cy1/add-benefit-expense                              controllers.registration.ManageRegistrationController.showConfirmAddNextTaxYear
+GET         /cy1/add-benefit-expense                              controllers.registration.ManageRegistrationController.showCheckYourAnswersAddNextTaxYear
 POST        /cy1/add-benefit-expense                              controllers.registration.ManageRegistrationController.addNextYearRegisteredBenefitTypes
 
-GET         /cy1/add-benefit-expense-confirmed                     controllers.WhatNextPageController.showWhatNextRegisteredBik
-
-## These want to be get and post to /cy/choose-benefit-expense
 GET         /cy/choose-benefit-expense                            controllers.registration.ManageRegistrationController.currentTaxYearOnPageLoad
-POST        /cy/choose-benefit-expense                            controllers.registration.ManageRegistrationController.confirmAddCurrentTaxYear
-## These will be a get and post to /cy/add-benefit-expense
-GET         /cy/add-benefit-expense                               controllers.registration.ManageRegistrationController.showConfirmAddCurrentTaxYear
-POST        /update-registrations                                controllers.registration.ManageRegistrationController.updateRegisteredBenefitTypes
-## This will be a get for the confrirmation screen
-## GET
+POST        /cy/choose-benefit-expense                            controllers.registration.ManageRegistrationController.checkYourAnswersAddCurrentTaxYear
+
+GET         /cy/add-benefit-expense                               controllers.registration.ManageRegistrationController.showCheckYourAnswersAddCurrentTaxYear
+POST        /cy/add-benefit-expense                               controllers.registration.ManageRegistrationController.updateCurrentYearRegisteredBenefitTypes
+
+GET         /:year/add-benefit-expense-confirmed                   controllers.WhatNextPageController.showWhatNextRegisteredBik(year: String)
+
 
 ## Remove registrations
 GET         /:iabdType/remove-benefit-expense                     controllers.registration.ManageRegistrationController.confirmRemoveNextTaxYearNoForm(iabdType: String)

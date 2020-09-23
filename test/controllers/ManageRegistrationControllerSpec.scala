@@ -311,7 +311,7 @@ class ManageRegistrationControllerSpec extends PlaySpec with TestAuthUser with F
     }
   }
 // TODO FIX ME
-  "When loading the updateRegisteredBenefitTypes, an authorised user" should {
+  "When loading the updateCurrentYearRegisteredBenefitTypes, an authorised user" should {
     "persist their changes and be redirected to the what next page" in {
       val mockRegistrationList = RegistrationList(
         None,
