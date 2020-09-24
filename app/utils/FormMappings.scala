@@ -290,4 +290,11 @@ class FormMappings @Inject()(val messagesApi: MessagesApi) extends PayrollBikDef
     )(ExclusionNino.apply)(ExclusionNino.unapply)
   )
 
+  val removalReasonForm: Form[BinaryRadioButtonWithDesc] = Form(
+    mapping(
+      "selectionValue" -> nonEmptyText,
+      "info"           -> optional(text)
+    )(BinaryRadioButtonWithDesc.apply)(BinaryRadioButtonWithDesc.unapply)
+  )
+
 }

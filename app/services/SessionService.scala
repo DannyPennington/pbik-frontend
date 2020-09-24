@@ -16,21 +16,17 @@
 
 package services
 
-import config._
+import config.PbikSessionCache
 import javax.inject.Inject
-import models._
+import models.{EiLPerson, PbikSession, RegistrationItem, RegistrationList}
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.cache.client.CacheMap
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SessionService @Inject()(
-  val http: DefaultHttpClient,
-  val sessionCache: PbikSessionCache,
-  appConfig: PbikAppConfig) {
+class SessionService @Inject()(val http: DefaultHttpClient, val sessionCache: PbikSessionCache) {
 
   private object CacheKeys extends Enumeration {
     val RegistrationList, BikRemoved, ListOfMatches, EiLPerson, CurrentExclusions = Value
@@ -53,7 +49,7 @@ class SessionService @Inject()(
       }
       .recover {
         case ex: Exception =>
-          Logger.error(s"[SessionService][fetchPbikSession] Fetch failed due to: $ex")
+          Logger.warn(s"[SessionService][fetchPbikSession] Fetch failed due to: $ex")
           Some(cleanSession)
       }
 
@@ -107,7 +103,7 @@ class SessionService @Inject()(
         case CacheKeys.CurrentExclusions =>
           session.copy(currentExclusions = Some(value.get.asInstanceOf[List[EiLPerson]]))
         case _ =>
-          Logger.warn(s"[SessionService][cache] No matching keys found")
+          Logger.warn(s"[SessionService][cache] No matching keys found - returning clean session")
           cleanSession
       }
     for {

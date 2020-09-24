@@ -47,7 +47,7 @@ class ConfirmNextYearViewSpec extends PBIKViewSpec {
   val removalBik = Some(RegistrationItem("30", true, true))
 
   def viewWithForm(form: Form[RegistrationList]): Html =
-    confirmUpdateNextTaxYearView(bikList, removalBik, form, additive = true, taxYearRange, EmpRef("", ""))
+    confirmUpdateNextTaxYearView(bikList, removalBik, additive = true, taxYearRange, EmpRef("", ""))
 
   "nextYearPage" must {
     behave like pageWithTitle(messages("AddBenefits.Confirm.Single.Title"))

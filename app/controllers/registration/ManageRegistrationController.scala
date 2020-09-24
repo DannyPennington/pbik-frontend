@@ -16,11 +16,8 @@
 
 package controllers.registration
 
-import java.util.UUID
-
 import config.PbikAppConfig
 import connectors.HmrcTierConnector
-import controllers.WhatNextPageController
 import controllers.actions.{AuthAction, NoSessionCheckAction}
 import services.{BikListService, RegistrationService, SessionService}
 import javax.inject.Inject
@@ -29,11 +26,9 @@ import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.Logger
 import play.api.mvc._
-import play.twirl.api.HtmlFormat
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import utils.{ControllersReferenceData, URIInformation, _}
-import views.html.ErrorPage
 import views.html.registration.{ConfirmAddCurrentTaxYear, ConfirmUpdateNextTaxYear, CurrentTaxYear, NextTaxYear}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -49,8 +44,6 @@ class ManageRegistrationController @Inject()(
   val authenticate: AuthAction,
   val noSessionCheck: NoSessionCheckAction,
   val cachingService: SessionService,
-  taxDateUtils: TaxDateUtils,
-  whatNextPageController: WhatNextPageController,
   controllersReferenceData: ControllersReferenceData,
   splunkLogger: SplunkLogger,
   pbikAppConfig: PbikAppConfig,
@@ -58,8 +51,7 @@ class ManageRegistrationController @Inject()(
   nextTaxYearView: NextTaxYear,
   currentTaxYearView: CurrentTaxYear,
   confirmAddCurrentTaxYearView: ConfirmAddCurrentTaxYear,
-  confirmUpdateNextTaxYearView: ConfirmUpdateNextTaxYear,
-  errorPageView: ErrorPage)
+  confirmUpdateNextTaxYearView: ConfirmUpdateNextTaxYear)
     extends FrontendController(cc) with I18nSupport {
 
   def nextTaxYearAddOnPageLoad: Action[AnyContent] =
@@ -72,6 +64,9 @@ class ManageRegistrationController @Inject()(
       )
       controllersReferenceData.responseErrorHandler(staticDataRequest)
     }
+
+  /*
+  These 2 are never actually called by anything apart from unit tests
 
   def nextTaxYearRemoveOnPageLoad: Action[AnyContent] = (authenticate andThen noSessionCheck).async {
     implicit request =>
@@ -123,6 +118,8 @@ class ManageRegistrationController @Inject()(
     }
     controllersReferenceData.responseErrorHandler(loadResultFuture)
   }
+
+   */
 
   def currentTaxYearOnPageLoad: Action[AnyContent] =
     (authenticate andThen noSessionCheck).async { implicit request =>
@@ -214,13 +211,17 @@ class ManageRegistrationController @Inject()(
             confirmUpdateNextTaxYearView(
               registrationList,
               None,
-              form,
               additive = true,
               controllersReferenceData.YEAR_RANGE,
               empRef = request.empRef)))
       }
       controllersReferenceData.responseErrorHandler(resultFuture)
   }
+
+  /*
+  This is never actually used - it seems there is code in the NextTaxYear view alongside this that would support multiple removals at the same time,
+  the same way it does with adding multiple benefits. However this has never been enabled and is impossible to reach in the current service.
+  Enabling it would require a bit of a re-write anyway so my vote would be to remove this entirely as it makes the service more confusing to work with
 
   def confirmRemoveNextTaxYear: Action[AnyContent] = (authenticate andThen noSessionCheck).async { implicit request =>
     val resultFuture = for {
@@ -253,35 +254,7 @@ class ManageRegistrationController @Inject()(
     controllersReferenceData.responseErrorHandler(resultFuture)
   }
 
-  def confirmRemoveNextTaxYearNoForm(iabdType: String): Action[AnyContent] =
-    (authenticate andThen noSessionCheck).async { implicit request =>
-      val bikToRemove = RegistrationItem(iabdType, active = true, enabled = true)
-      val registrationList =
-        RegistrationList(None, List(bikToRemove), reason = None)
-      val form: Form[RegistrationList] = formMappings.objSelectedForm.fill(registrationList)
-      cachingService.cacheBikRemoved(RegistrationItem(uriInformation.iabdValueURLDeMapper(iabdType), false, true))
-      val resultFuture = Future.successful(
-        Ok(confirmUpdateNextTaxYearView(
-          registrationList,
-          Some(bikToRemove),
-          formMappings.objSelectedForm.fill(form.get),
-          additive = false,
-          controllersReferenceData.YEAR_RANGE,
-          empRef = request.empRef
-        )))
-      controllersReferenceData.responseErrorHandler(resultFuture)
-    }
-
-  def removeNextYearRegisteredBenefitTypes: Action[AnyContent] = (authenticate andThen noSessionCheck).async {
-    implicit request =>
-      val persistentBiks: List[Bik] =
-        controllersReferenceData.generateListOfBiksBasedOnForm(ControllersReferenceDataCodes.BIK_REMOVE_STATUS)
-      val registeredFuture =
-        updateBiksFutureAction(controllersReferenceData.YEAR_RANGE.cy, persistentBiks, additive = false)
-      controllersReferenceData.responseErrorHandler(registeredFuture)
-  }
-
-  def generateConfirmationScreenView(
+    def generateConfirmationScreenView(
     year: Int,
     cachingSuffix: String,
     generateViewBasedOnFormItems: Form[RegistrationList] => HtmlFormat.Appendable,
@@ -291,13 +264,39 @@ class ManageRegistrationController @Inject()(
     formMappings.objSelectedForm.bindFromRequest.fold(
       formWithErrors => Future.successful(viewToRedirect(formWithErrors)),
       values => {
-
         val items: List[RegistrationItem] = values.active.filter(x => x.active)
         Future.successful(
           Ok(generateViewBasedOnFormItems(formMappings.objSelectedForm.fill(RegistrationList(None, items, None)))))
-
       }
     )
+   */
+
+  def confirmRemoveNextTaxYearNoForm(iabdType: String): Action[AnyContent] =
+    (authenticate andThen noSessionCheck).async { implicit request =>
+      val bikToRemove = RegistrationItem(iabdType, active = true, enabled = true)
+      val registrationList =
+        RegistrationList(None, List(bikToRemove), reason = None)
+      cachingService.cacheBikRemoved(RegistrationItem(uriInformation.iabdValueURLDeMapper(iabdType), false, true))
+      val resultFuture = Future.successful(
+        Ok(
+          confirmUpdateNextTaxYearView(
+            registrationList,
+            Some(bikToRemove),
+            additive = false,
+            controllersReferenceData.YEAR_RANGE,
+            empRef = request.empRef
+          )))
+      controllersReferenceData.responseErrorHandler(resultFuture)
+    }
+
+  def removeNextYearRegisteredBenefitTypes: Action[AnyContent] = (authenticate andThen noSessionCheck).async {
+    implicit request =>
+      val registeredFuture = cachingService.fetchPbikSession().flatMap { session =>
+        val bikToRemove = Bik(session.get.bikRemoved.get.id, ControllersReferenceDataCodes.BIK_REMOVE_STATUS)
+        updateBiksFutureAction(controllersReferenceData.YEAR_RANGE.cy, List(bikToRemove), additive = false)
+      }
+      controllersReferenceData.responseErrorHandler(registeredFuture)
+  }
 
   def updateCurrentYearRegisteredBenefitTypes: Action[AnyContent] = (authenticate andThen noSessionCheck).async {
     implicit request =>
@@ -347,26 +346,21 @@ class ManageRegistrationController @Inject()(
             }
           } else {
             // Remove benefit - if there are no errors proceed
-            formMappings.objSelectedForm
+            formMappings.removalReasonForm
               .bindFromRequest()
               .fold(
                 _ => {
-                  Logger.info("[ManageRegistrationController][updateBiksFutureAction] No removal reason selected")
+                  Logger.warn("[ManageRegistrationController][updateBiksFutureAction] No removal reason selected")
                   Future.successful(
                     Redirect(routes.ManageRegistrationController.confirmRemoveNextTaxYearNoForm(
                       uriInformation.iabdValueURLMapper(persistentBiks.head.iabdType)))
                       .flashing("error" -> Messages("RemoveBenefits.reason.no.selection")))
                 },
                 values => {
-                  val listWithReason = RegistrationList(None, session.get.registrations.get.active, values.reason)
+                  val listWithReason =
+                    RegistrationList(None, session.get.registrations.get.active, reason = Some(values))
                   cachingService.cacheRegistrationList(listWithReason).flatMap { _ =>
-                    Future(
-                      removeBenefitReasonValidation(
-                        listWithReason,
-                        formMappings.objSelectedForm.bindFromRequest(),
-                        year,
-                        persistentBiks,
-                        changes))
+                    Future.successful(removeBenefitReasonValidation(listWithReason, year, persistentBiks, changes))
                   }
                 }
               )
@@ -376,7 +370,6 @@ class ManageRegistrationController @Inject()(
 
   def removeBenefitReasonValidation(
     registrationList: RegistrationList,
-    form: Form[RegistrationList],
     year: Int,
     persistentBiks: List[Bik],
     changes: List[Bik])(implicit request: AuthenticatedRequest[AnyContent]): Result =
@@ -419,7 +412,7 @@ class ManageRegistrationController @Inject()(
       }
       case _ => {
         Logger.warn(
-          s"[ManageRegistrationController][removeBenefitReasonValidation] Couldn't find reason from request form: $form")
+          s"[ManageRegistrationController][removeBenefitReasonValidation] Couldn't find reason from request form")
         Redirect(
           routes.ManageRegistrationController.confirmRemoveNextTaxYearNoForm(
             uriInformation.iabdValueURLMapper(persistentBiks.head.iabdType)))

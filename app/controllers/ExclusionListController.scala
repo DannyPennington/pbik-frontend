@@ -356,7 +356,7 @@ class ExclusionListController @Inject()(
         individualsDetails.worksPayrollNumber,
         individualsDetails.dateOfBirth,
         individualsDetails.gender,
-        Some(20), //Setting to exclusion status
+        Some(ControllersReferenceDataCodes.EXCLUSION_ADD_STATUS),
         individualsDetails.perOptLock
       ))
 
