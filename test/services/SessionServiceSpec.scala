@@ -47,7 +47,7 @@ class SessionServiceSpec extends UnitSpec with FakePBIKApplication with BeforeAn
 
   val timeout: FiniteDuration = 5 seconds
   implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session001")))
-  val TestSessionService: SessionService = new SessionService(mockHttp, mockPbikSessionCache, mockAppConfig)
+  val TestSessionService: SessionService = new SessionService(mockHttp, mockPbikSessionCache)
 
   val pbikSession: PbikSession = PbikSession(None, None, None, None, None)
 

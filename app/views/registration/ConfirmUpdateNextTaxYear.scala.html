@@ -129,7 +129,7 @@ back_link: BackLink)
 
         } else {
 
-            @helpers.form(action = controllers.registration.routes.ManageRegistrationController.removeNextYearRegisteredBenefitTypes(),
+            @helpers.form(action = controllers.registration.routes.ManageRegistrationController.removeNextYearRegisteredBenefitTypes(removalBik.get.id),
             'onsubmit -> "gaEventConfirmRemoveBenefits()", 'id -> "form-remove") {
                 <div class='form-group @if(flash.get("error")) {form-group-error}'>
                     <fieldset>

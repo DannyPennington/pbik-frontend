@@ -108,7 +108,7 @@ class HomePageControllerSpec extends PlaySpec with FakePBIKApplication with Test
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = mockrequest
       implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId(sessionId)))
       val result = await(homePageController.loadCautionPageForCY.apply(request))
-      result.header.status must be(OK)
+      result.header.status must be(METHOD_NOT_ALLOWED)
       result.body.asInstanceOf[Strict].data.utf8String must include(Messages("ServiceMessage.10003.1"))
       result.body.asInstanceOf[Strict].data.utf8String must include(Messages("ServiceMessage.10003.2"))
     }

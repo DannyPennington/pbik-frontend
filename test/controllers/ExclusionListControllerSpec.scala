@@ -288,32 +288,18 @@ class ExclusionListControllerSpec extends PlaySpec with OneAppPerSuite with Fake
   }
 
   "When loading the performPageLoad, an unauthorised user" should {
-    "see the users already excluded" in {
+    "be taken to an error page" in {
       implicit val timeout: Timeout = 10 seconds
       val result = await(mockExclusionListController.performPageLoad("cy", "car").apply(mockrequest))(timeout)
-      result.header.status must be(OK)
-
-      //TODO: Work on this
-      //result.body.asInstanceOf[Strict].data.utf8String must include(Messages("ExclusionOverview.title"))
-      //result.body.asInstanceOf[Strict].data.utf8String must include(Messages("AF111111"))
-      //result.body.asInstanceOf[Strict].data.utf8String must include("Humpty Dumpty")
+      result.header.status must be(INTERNAL_SERVER_ERROR)
     }
   }
 
   "When loading the performPageLoad without navigating from the overview page, an unauthorised user" should {
-    "see the users already excluded" in {
+    "be taken to an error page" in {
       implicit val timeout: Timeout = 10 seconds
       val result = await(mockExclusionListController.performPageLoad("cy", "car").apply(mockrequest))(timeout)
-      result.header.status must be(OK)
-
-      // TODO: Should work on this
-      /*       result.body.asInstanceOf[Strict].data.utf8String must include("Humpty Dumpty")
-             result.body.asInstanceOf[Strict].data.utf8String must include(Messages("Service.excludeanotheremployee"))
-             result.body.asInstanceOf[Strict].data.utf8String must include("Humpty")
-             result.body.asInstanceOf[Strict].data.utf8String must include("Alexander")
-             result.body.asInstanceOf[Strict].data.utf8String must include("Dumpty")
-             result.body.asInstanceOf[Strict].data.utf8String must include("123")
-             result.body.asInstanceOf[Strict].data.utf8String must include("01/01/1980")*/
+      result.header.status must be(INTERNAL_SERVER_ERROR)
     }
   }
 
